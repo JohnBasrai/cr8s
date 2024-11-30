@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Responsive HTML5 Page Layout Template</title>
+    <style>
+html,body,div,span,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,abbr,address,cite,code,del,dfn,em,img,ins,kbd,q,samp,small,strong,sub,sup,var,b,i,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td,article,aside,canvas,details,figcaption,figure,footer,header,hgroup,menu,nav,section,summary,time,mark,audio,video{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}
+body{line-height:1; font-family: arial;}
+h1{font-size: 25px;text-align: center;}h2{font-size: 21px;}h3{font-size: 18px;}h4{font-size: 16px;}
+article,aside,details,figcaption,figure,footer,header,hgroup,menu,nav,section{display:block}
+a{margin:0;padding:0;font-size:100%;vertical-align:baseline;background:transparent}
+table{border-collapse:collapse;border-spacing:0}
+hr{display:block;height:1px;border:0;border-top:1px solid #ccc;margin:1em 0;padding:0}
+body,html {
+	background-color: #FFF;
+}
+header {
+    background: #AEC6CF;
+    padding: 30px 0;
+    max-width: 940px;
+}
+header, section, footer {
+    max-width: 1000px;
+    margin: auto;
+}
+section {
+  padding: 30px 0px;
+  border-bottom: 1px solid #999;
+  color: #333;
+}
+#pageContent {
+    max-width: 1000px;
+    margin: auto;
+    border: none;
+}
+article {
+    border-bottom: 2px dotted #999;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+}
+article h2 {
+    font-weight: normal;
+    margin-bottom: 12px;
+}
+footer {
+	background: #AEC6CF;
+	clear: both;
+	text-align: right;
+}
+footer p {
+	padding: 20px;
+}
+    </style>
+</head>
+
+<body>
+	<header>
+		<h1>Cr8s Daily digest</h1>
+	</header>
+	<section>
+		<strong>Please find below a list with the crates that were created the past 24hours.</strong>
+	</section>
+	<section id="pageContent">
+		<main role="main">
+      {% for crate in crates %}
+			<article>
+				<h2>{{ crate.name }} - <code>{{ crate.code }} {{ crate.version }}</code></h2>
+				<p>{{ crate.description }}</p>
+				<small>{{ crate.created_at }}</small>
+			</article>
+      {% endfor %}
+		</main>
+	</section>
+	<footer>
+		<p>&copy; {{ year }} Generated and sent by cr8s rust app</p>
+	</footer>
+
+
+</body>
+
+</html>
