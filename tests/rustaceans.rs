@@ -6,22 +6,31 @@ pub mod common;
 #[test]
 fn test_get_rustaceans() {
     // Setup
-    let client = common::get_client_with_logged_in_admin();
-    let rustacean1 = common::create_test_rustacean(&client);
-    let rustacean2 = common::create_test_rustacean(&client);
+    let client_adm = common::get_client_with_logged_in_admin();
+    let rustacean1 = common::create_test_rustacean(&client_adm);
+    let rustacean2 = common::create_test_rustacean(&client_adm);
 
     // Test
-    let client = common::get_client_with_logged_in_viewer();
-    let response = client.get(format!("{}/rustaceans", common::APP_HOST)).send().unwrap();
+    let client_view = common::get_client_with_logged_in_viewer();
+    let response = client_view.get(format!("{}/rustaceans", common::APP_HOST)).send().unwrap();
+
     assert_eq!(response.status(), StatusCode::OK);
+
     let json: Value = response.json().unwrap();
     assert!(json.as_array().unwrap().contains(&rustacean1));
     assert!(json.as_array().unwrap().contains(&rustacean2));
 
     // Cleanup
-    let client = common::get_client_with_logged_in_admin();
-    common::delete_test_rustacean(&client, rustacean1);
-    common::delete_test_rustacean(&client, rustacean2);
+    common::delete_test_rustacean(&client_adm, rustacean1);
+    common::delete_test_rustacean(&client_adm, rustacean2);
+}
+
+#[test]
+fn test_get_rustaceans_not_loggedin_fails() {
+    // Setup
+    let client = Client::new();
+    let response = client.get(format!("{}/rustaceans", common::APP_HOST)).send().unwrap();
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 }
 
 #[test]

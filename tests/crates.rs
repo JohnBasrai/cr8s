@@ -28,6 +28,15 @@ fn test_get_crates() {
 }
 
 #[test]
+fn test_get_crates_not_loggedin_fails() {
+    // Setup
+    let client = Client::new();
+    let response = client.get(format!("{}/crates", common::APP_HOST)).send().unwrap();
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+}
+
+
+#[test]
 fn test_create_crate() {
     // Setup
     let client = common::get_client_with_logged_in_admin();
