@@ -3,7 +3,7 @@ use argon2::password_hash::Error;
 use argon2::password_hash::SaltString;
 use argon2::Argon2;
 use argon2::{PasswordHash, PasswordHasher, PasswordVerifier};
-use rand::distributions::Alphanumeric;
+use rand::distr::Alphanumeric;
 use rand::Rng;
 
 use crate::models::User;
@@ -19,7 +19,7 @@ pub fn authorize_user(user: &User, credentials: Credentials) -> Result<String, E
     let db_hash = PasswordHash::new(&user.password)?;
     argon2.verify_password(credentials.password.as_bytes(), &db_hash)?;
 
-    let session_id = rand::thread_rng()
+    let session_id: String = rand::rng()
         .sample_iter(&Alphanumeric)
         .take(128)
         .map(char::from)
