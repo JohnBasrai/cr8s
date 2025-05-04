@@ -1,30 +1,41 @@
-
 services:
   postgres:
     image: postgres:latest
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=app_db
-    command: ["postgres", "-c", "log_statement=all"]
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: app_db
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:latest
+    ports:
+      - "6379:6379"
 
   app:
     build: .
+    tty: true
+    ports:
+      - "8000:8000"          # expose Rocket to host
+    volumes:
+      - ./:/app/             # hot-reload / dev editing
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@postgres/app_db
-      - |
-        ROCKET_DATABASES={
-          postgres={url=postgres://postgres:postgres@postgres/app_db},
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/app_db
+      ROCKET_DATABASES: |
+        {
+          postgres={url=postgres://postgres:postgres@postgres:5432/app_db},
           redis={url=redis://redis:6379}
         }
-      - SMTP_HOST=smtp.gmail.com
-      - SMTP_USERNAME=paris.liakos@gmail.com
-      - SMTP_PASSWORD=okks qghu trly qwot
-      - FOO
-    ports:
-      - 8000:8000
-    volumes:
-      - ./:/app/
+      # (optional) e-mail creds — consider .env or secrets instead
+      SMTP_HOST: smtp.gmail.com
+      SMTP_USERNAME: you@example.com
+      SMTP_PASSWORD: okks qghu trly qwot
+    depends_on:
+      postgres:
+        condition: service_healthy

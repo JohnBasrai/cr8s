@@ -29,30 +29,31 @@ Docker Compose v2       # Already bundled with modern Docker
 
 ---
 
-## 🚀 Quick start (Docker‑first workflow)
+## 🚀 Quick start (Docker-first workflow)
 
 ```bash
-# 1. Clone & build
-$ git clone https://github.com/JohnBasrai/cr8s.git && cd cr8s
-$ docker compose build              # compiles Rust into the image
+# 0 .  Clone & build the image once
+git clone https://github.com/JohnBasrai/cr8s.git && cd cr8s
+docker compose build              # compiles the Rust workspace into the app image
 
-# 2. Launch backing services (Postgres & Redis)
-$ docker compose up -d postgres redis
+# 1 .  Run the helper script – it does the rest in one shot
+./scripts/quickstart.sh
+````
 
-# 3. Initialize database (idempotent)
-$ docker compose run --rm app diesel setup
+`quickstart.sh` executes the same steps you would run manually:
 
-# 4. Run the test-suite (server + tests in same container)
-$ docker compose run --rm --service-ports app \
-    bash -c 'cargo run --bin server & sleep 3 && cargo test -- --test-threads=1'
+1. `docker compose down -v` – start clean (containers + volumes)
+2. `docker compose up -d postgres redis` – bring up Postgres & Redis
+3. Wait until Postgres accepts TCP connections, then run
+   `diesel setup` – create the database & apply migrations
+4. Launch the Rocket server and run the integration-test suite
+5. `docker compose down` – tear everything back down
 
-# 5. Tear everything down
-$ docker compose down
-```
+### What to expect
 
-* **No host env‑vars needed** – the `app` service already sets `DATABASE_URL` and `ROCKET_DATABASES` in *docker-compose.yml*, so Diesel, Rocket, and the test runner all see the right values automatically.
-* **Integrated server spin-up** – the test command starts Rocket (`cargo run --bin server & sleep 5`) on `127.0.0.1:8000`; the tests hit it via `reqwest`, exactly like in CI.
-* **Expected result** – when the suite finishes you should see something like `ok. 2 passed; 0 failed` (or however many tests exist).
+* **Exit status** – returns `0` when every step succeeds (Bash’s `set -e` will surface any error with a non-zero code).
+* **No host env-vars needed** – the `app` service injects `DATABASE_URL` and `ROCKET_DATABASES`, so Diesel, Rocket, and the tests “just work.”
+* **Successful run** – you’ll see something like `result: ok. 6 passed; 0 failed;`, and your shell prompt will return with exit code 0.
 
 Need more Docker tips (stream logs, cURL pokes, DB maintenance)? See [`docs/docker-usage.md`](docs/docker-usage.md).
 
@@ -71,6 +72,8 @@ Need more Docker tips (stream logs, cURL pokes, DB maintenance)? See [`docs/dock
 │   └── native-workflow.md
 ├── LICENSE
 ├── README.md
+├── scripts
+│   └── quickstart.sh
 ├── src
 │   ├── auth.rs
 │   ├── bin
