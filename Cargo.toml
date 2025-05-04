@@ -1,25 +1,29 @@
 [package]
 name = "cr8s"
 default-run = "server"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread"] }
-rocket = { version = "0.5", features = ["json"] }
-rocket_db_pools = { version = "0.1", features = ["diesel_postgres", "deadpool_redis"] }
-diesel = { version = "2.1", features = ["chrono"] }
-diesel-async = { version = "0.4", features = ["postgres"] }
-serde = "1.0"
-serde_json = "1.0"
-chrono = { version = "0.4", features = ["serde"] }
-clap = "4.4"
-argon2 = "0.5"
-rand = "0.8"
-tera = "1"
-lettre = "0.11"
+tokio            = { version = "1",   features = ["macros", "rt", "rt-multi-thread"] }
+rocket           = { version = "0.5", features = ["json"] }
+
+# Diesel 2.1 stack (compatible versions)
+rocket_db_pools  = { version = "0.2",   features = ["diesel_postgres", "deadpool_redis"] }
+diesel           = { version = "2.1",   features = ["chrono"] }          # stays on 2.1
+diesel-async     = { version = "0.4.1", features = ["postgres"] }
+
+# bumped minor/patch on misc crates
+serde            = "1.0"
+serde_json       = "1.0"
+chrono           = { version = "0.4", features = ["serde"] }
+clap             = "4.5"
+argon2           = "0.5"
+rand             = "0.9"
+tera             = "1.20"
+lettre           = "0.11"
 
 [dev-dependencies]
-reqwest = { version = "0.11", features = ["json", "blocking"] }
+reqwest          = { version = "0.12", features = ["json", "blocking"] }

@@ -1,17 +1,11 @@
 name: Rust CI
 
-# ────────────────────────────────────────────────
-# Triggers
-# ────────────────────────────────────────────────
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
 
-# ────────────────────────────────────────────────
-# Global env (shared by all steps)
-# ────────────────────────────────────────────────
 env:
   CARGO_TERM_COLOR: always
   DATABASE_URL: postgres://postgres:postgres@localhost:5432/app_db
@@ -25,9 +19,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    # ────────────────────────────────────────────
-    # Service containers (PostgreSQL + Redis)
-    # ────────────────────────────────────────────
     services:
       postgres:
         image: postgres:latest
@@ -52,10 +43,7 @@ jobs:
           --health-retries 5
 
     steps:
-    # 1 ─ Checkout code
     - uses: actions/checkout@v4
-
-    # 2 ─ Install Rust toolchain + components
     - name: Install Rust toolchain
       uses: actions-rs/toolchain@v1
       with:
@@ -64,7 +52,6 @@ jobs:
         override: true
         components: clippy,rustfmt
 
-    # 3 ─ Speed up builds by caching registry + target/
     - name: Cache cargo registry and build artifacts
       uses: actions/cache@v4
       with:
@@ -74,40 +61,34 @@ jobs:
           target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    # 4 ─ Lint: Clippy (fails on warnings)
     - name: Run Clippy
       run: cargo clippy --all-targets --all-features -- -D warnings
 
-    # 5 ─ Formatting check
     - name: Check rustfmt
       run: cargo fmt -- --check
 
-    # 6 ─ System libs for Diesel (libpq)
+    - name: Cargo audit (deny new advisories)
+      uses: actions-rs/audit-check@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Install system dependencies
       run: sudo apt-get update && sudo apt-get install -y libpq-dev pkg-config
 
-    # 7 ─ Install Diesel CLI (PostgreSQL only)
     - name: Install Diesel CLI
       run: cargo install diesel_cli --no-default-features --features postgres
 
-    # 8 ─ Prepare database schema (drops → recreates → migrates)
     - name: Run Diesel migrations (diesel setup)
       run: diesel setup
 
-    # 9 ─ Build code
     - name: Build
       run: cargo build --all-features --verbose
 
-    # 10 ─ Launch Rocket server in background & run tests
     - name: Run tests
       shell: bash
       run: |
-        # Start server on 127.0.0.1:8000 (matches APP_HOST in tests)
         cargo run --bin server &
         SERVER_PID=$!
-        # Give it a moment to start up
         sleep 3
-        # Run test-suite (single thread avoids port contention)
         cargo test --all-features -- --test-threads=1
-        # Shut down server
         kill $SERVER_PID

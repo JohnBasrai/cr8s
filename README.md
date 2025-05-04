@@ -44,7 +44,7 @@ $ docker compose run --rm app diesel setup
 
 # 4. Run the test-suite (server + tests in same container)
 $ docker compose run --rm --service-ports app \
-    bash -c 'cargo run --bin server & sleep 5 && cargo test -- --test-threads=1'
+    bash -c 'cargo run --bin server & sleep 3 && cargo test -- --test-threads=1'
 
 # 5. Tear everything down
 $ docker compose down
@@ -61,20 +61,41 @@ Need more Docker tips (stream logs, cURL pokes, DB maintenance)? See [`docs/dock
 ## 📂 Project layout
 
 ```
-├── src/
-│   ├── bin/
-│   │   ├── server.rs        # Rocket entry‑point
-│   │   └── cli.rs           # Maintenance CLI
-│   └── lib.rs               # Shared domain logic
-├── tests/                   # Integration tests
-├── migrations/              # Diesel SQL migrations
-├── Dockerfile               # Application image
-├── docker-compose.yml       # Dev/CI stack definition
-├── docs/
-│   ├── docker-usage.md      # Extra Docker commands (optional)
-│   └── native-workflow.md   # Community‑supported native setup
-└── .github/workflows/
-    └── rust.yml             # CI pipeline
+├── Cargo.toml
+├── CHANGELOG.md
+├── diesel.toml
+├── docker-compose.yml
+├── Dockerfile
+├── docs
+│   ├── docker-usage.md
+│   └── native-workflow.md
+├── LICENSE
+├── README.md
+├── src
+│   ├── auth.rs
+│   ├── bin
+│   │   ├── cli.rs
+│   │   └── server.rs
+│   ├── commands.rs
+│   ├── lib.rs
+│   ├── mail.rs
+│   ├── models.rs
+│   ├── repositories.rs
+│   ├── rocket_routes
+│   │   ├── authorization.rs
+│   │   ├── crates.rs
+│   │   ├── mod.rs
+│   │   └── rustaceans.rs
+│   └── schema.rs
+├── templates
+│   └── email
+│       └── digest.html
+└── tests
+    ├── authorization.rs
+    ├── common
+    │   └── mod.rs
+    ├── crates.rs
+    └── rustaceans.rs
 ```
 
 ---

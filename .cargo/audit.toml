@@ -1,0 +1,4 @@
+# .cargo/audit.toml
+[advisories]
+# See [#4]: https://github.com/JohnBasrai/cr8s/issues/4
+ignore = ["RUSTSEC-2024-0365"]   # Diesel 2.1 Binary-protocol truncation
