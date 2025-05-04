@@ -42,17 +42,16 @@ $ docker compose up -d postgres redis
 # 3. Initialize database (idempotent)
 $ docker compose run --rm app diesel setup
 
-# 4. Run test‑suite via dedicated runner (stops stack when done)
-$ docker compose up --build --abort-on-container-exit test_runner
+# 4. Run the test-suite (server + tests in same container)
+$ docker compose run --rm --service-ports app \
+    bash -c 'cargo run --bin server & sleep 5 && cargo test -- --test-threads=1'
 
 # 5. Tear everything down
 $ docker compose down
 ```
 
-*The `test_runner` service starts its own container, waits for the app server, and executes `cargo test -- --test-threads=1`. Logs from the server and the tests stay neatly separated.*
-
 * **No host env‑vars needed** – the `app` service already sets `DATABASE_URL` and `ROCKET_DATABASES` in *docker-compose.yml*, so Diesel, Rocket, and the test runner all see the right values automatically.
-* **Integrated server spin‑up** – the `test_runner` container starts Rocket on `127.0.0.1:8000` and the tests reach it via `reqwest`, exactly like in CI.
+* **Integrated server spin-up** – the test command starts Rocket (`cargo run --bin server & sleep 5`) on `127.0.0.1:8000`; the tests hit it via `reqwest`, exactly like in CI.
 * **Expected result** – when the suite finishes you should see something like `ok. 2 passed; 0 failed` (or however many tests exist).
 
 Need more Docker tips (stream logs, cURL pokes, DB maintenance)? See [`docs/docker-usage.md`](docs/docker-usage.md).
@@ -85,7 +84,7 @@ Need more Docker tips (stream logs, cURL pokes, DB maintenance)? See [`docs/dock
 1) GitHub Actions spins up Postgres & Redis service containers
 2) installs `diesel_cli`
 3) runs `diesel setup`
-4) and executes the test runner
+4) and runs cargo test against the live server.
 
 Clippy and rustfmt are gated with `-D warnings`, so the main branch stays clean.
 

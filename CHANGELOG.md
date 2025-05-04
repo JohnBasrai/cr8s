@@ -10,11 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **GitHub Actions** workflow (`.github/workflows/rust.yml`) with Postgres + Redis
   service containers, Diesel migrations, lint, build, and test steps.
 - Docker-first quick-start and expanded docs in `README.md`.
-- `docs/native-workflow.md` (community-supported native setup).
+- `docs/docker-usage.md`: cheat-sheet of common Docker Compose commands.
+- `docs/native-workflow.md`: step-by-step native (non-Docker) setup guide.
 
 ### Changed
-- `docker-compose.yml`: removed deprecated `version:` key and prepared
-  `test_runner` service for cleaner test logging.
+- `docker-compose.yml`: removed deprecated `version:` key. Tests now run 
+   in the same `app` container.
 - Enabled `tokio` **macros** and **rt-multi-thread** features in `Cargo.toml`.
 - Replaced hand-written `ToString` with `Display` for `RoleCode`.
 - Ran `cargo fmt` and fixed assorted Clippy warnings.

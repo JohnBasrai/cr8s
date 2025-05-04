@@ -84,7 +84,7 @@ jobs:
 
     # 6 ─ Prepare database schema (drops → recreates → migrates)
     - name: Run Diesel migrations
-      run: diesel database reset --no-interaction
+      run: diesel setup
 
     # 7 ─ Lint: Clippy (fails on warnings)
     - name: Run Clippy
@@ -106,7 +106,7 @@ jobs:
         cargo run --bin server &
         SERVER_PID=$!
         # Give it a moment to start up
-        sleep 5
+        sleep 3
         # Run test-suite (single thread avoids port contention)
         cargo test --all-features -- --test-threads=1 --verbose
         # Shut down server
