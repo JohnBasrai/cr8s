@@ -74,25 +74,25 @@ jobs:
           target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    # 4 ─ System libs for Diesel (libpq)
-    - name: Install system dependencies
-      run: sudo apt-get update && sudo apt-get install -y libpq-dev pkg-config
-
-    # 5 ─ Install Diesel CLI (PostgreSQL only)
-    - name: Install Diesel CLI
-      run: cargo install diesel_cli --no-default-features --features postgres
-
-    # 6 ─ Prepare database schema (drops → recreates → migrates)
-    - name: Run Diesel migrations
-      run: diesel setup
-
-    # 7 ─ Lint: Clippy (fails on warnings)
+    # 4 ─ Lint: Clippy (fails on warnings)
     - name: Run Clippy
       run: cargo clippy --all-targets --all-features -- -D warnings
 
-    # 8 ─ Formatting check
+    # 5 ─ Formatting check
     - name: Check rustfmt
       run: cargo fmt -- --check
+
+    # 6 ─ System libs for Diesel (libpq)
+    - name: Install system dependencies
+      run: sudo apt-get update && sudo apt-get install -y libpq-dev pkg-config
+
+    # 7 ─ Install Diesel CLI (PostgreSQL only)
+    - name: Install Diesel CLI
+      run: cargo install diesel_cli --no-default-features --features postgres
+
+    # 8 ─ Prepare database schema (drops → recreates → migrates)
+    - name: Run Diesel migrations (diesel setup)
+      run: diesel setup
 
     # 9 ─ Build code
     - name: Build
@@ -108,6 +108,6 @@ jobs:
         # Give it a moment to start up
         sleep 3
         # Run test-suite (single thread avoids port contention)
-        cargo test --all-features -- --test-threads=1 --verbose
+        cargo test --all-features -- --test-threads=1
         # Shut down server
         kill $SERVER_PID
