@@ -1,7 +1,7 @@
 mod auth;
+pub mod commands;
 mod mail;
 mod models;
-mod schema;
 mod repositories;
-pub mod commands;
 pub mod rocket_routes;
+mod schema;

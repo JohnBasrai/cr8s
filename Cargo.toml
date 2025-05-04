@@ -7,7 +7,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = "1"
+tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread"] }
 rocket = { version = "0.5", features = ["json"] }
 rocket_db_pools = { version = "0.1", features = ["diesel_postgres", "deadpool_redis"] }
 diesel = { version = "2.1", features = ["chrono"] }

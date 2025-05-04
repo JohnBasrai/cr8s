@@ -1,13 +1,14 @@
-use std::process::Command;
 use reqwest::blocking::{Client, ClientBuilder};
-use reqwest::StatusCode;
 use reqwest::header;
+use reqwest::StatusCode;
 use serde_json::{json, Value};
+use std::process::Command;
 
-pub static APP_HOST: &'static str = "http://127.0.0.1:8000";
+pub static APP_HOST: &str = "http://127.0.0.1:8000";
 
 pub fn create_test_rustacean(client: &Client) -> Value {
-    let response = client.post(format!("{}/rustaceans", APP_HOST))
+    let response = client
+        .post(format!("{}/rustaceans", APP_HOST))
         .json(&json!({
             "name": "Foo bar",
             "email": "foo@bar.com"
@@ -16,11 +17,12 @@ pub fn create_test_rustacean(client: &Client) -> Value {
         .unwrap();
     assert_eq!(response.status(), StatusCode::CREATED);
 
-   response.json().unwrap()
+    response.json().unwrap()
 }
 
 pub fn create_test_crate(client: &Client, rustacean: &Value) -> Value {
-    let response = client.post(format!("{}/crates", APP_HOST))
+    let response = client
+        .post(format!("{}/crates", APP_HOST))
         .json(&json!({
             "rustacean_id": rustacean["id"],
             "code": "foo",
@@ -32,18 +34,20 @@ pub fn create_test_crate(client: &Client, rustacean: &Value) -> Value {
         .unwrap();
     assert_eq!(response.status(), StatusCode::CREATED);
 
-   response.json().unwrap()
+    response.json().unwrap()
 }
 
 pub fn delete_test_rustacean(client: &Client, rustacean: Value) {
-    let response = client.delete(format!("{}/rustaceans/{}", APP_HOST, rustacean["id"]))
+    let response = client
+        .delete(format!("{}/rustaceans/{}", APP_HOST, rustacean["id"]))
         .send()
         .unwrap();
     assert_eq!(response.status(), StatusCode::NO_CONTENT);
 }
 
 pub fn delete_test_crate(client: &Client, a_crate: Value) {
-    let response = client.delete(format!("{}/crates/{}", APP_HOST, a_crate["id"]))
+    let response = client
+        .delete(format!("{}/crates/{}", APP_HOST, a_crate["id"]))
         .send()
         .unwrap();
     assert_eq!(response.status(), StatusCode::NO_CONTENT);
@@ -63,7 +67,8 @@ pub fn get_logged_in_client(username: &str, role: &str) -> Client {
         .unwrap();
 
     let client = Client::new();
-    let response = client.post(format!("{}/login", APP_HOST))
+    let response = client
+        .post(format!("{}/login", APP_HOST))
         .json(&json!({
             "username": username,
             "password": "1234",
@@ -78,10 +83,13 @@ pub fn get_logged_in_client(username: &str, role: &str) -> Client {
     let mut headers = header::HeaderMap::new();
     headers.insert(
         header::AUTHORIZATION,
-        header::HeaderValue::from_str(&header_value).unwrap()
+        header::HeaderValue::from_str(&header_value).unwrap(),
     );
 
-    ClientBuilder::new().default_headers(headers).build().unwrap()
+    ClientBuilder::new()
+        .default_headers(headers)
+        .build()
+        .unwrap()
 }
 
 pub fn get_client_with_logged_in_viewer() -> Client {

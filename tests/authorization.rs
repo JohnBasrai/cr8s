@@ -1,6 +1,6 @@
-use std::process::Command;
 use reqwest::{blocking::Client, StatusCode};
 use serde_json::{json, Value};
+use std::process::Command;
 
 pub mod common;
 
@@ -24,7 +24,8 @@ fn test_login() {
     let client = Client::new();
 
     // Test
-    let response = client.post(format!("{}/login", common::APP_HOST))
+    let response = client
+        .post(format!("{}/login", common::APP_HOST))
         .json(&json!({
             "username": "test_admin",
             "password": "1234",
@@ -36,7 +37,8 @@ fn test_login() {
     assert!(json.get("token").is_some());
     assert_eq!(json["token"].as_str().unwrap().len(), 128);
 
-    let response = client.post(format!("{}/login", common::APP_HOST))
+    let response = client
+        .post(format!("{}/login", common::APP_HOST))
         .json(&json!({
             "username": "test_admin",
             "password": "12345",
@@ -50,7 +52,8 @@ fn test_login() {
 fn test_me() {
     let client = common::get_client_with_logged_in_viewer();
 
-    let response = client.get(format!("{}/me", common::APP_HOST))
+    let response = client
+        .get(format!("{}/me", common::APP_HOST))
         .send()
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);

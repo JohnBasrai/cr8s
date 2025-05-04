@@ -1,15 +1,16 @@
+use std::fmt;
 use std::io::Write;
 use std::str::FromStr;
 
-use chrono::NaiveDateTime;
-use diesel::serialize::ToSql;
-use diesel::deserialize::FromSql;
-use diesel::pg::{Pg, PgValue};
-use diesel::{prelude::*, deserialize::FromSqlRow};
-use diesel::expression::AsExpression;
-use diesel::sql_types::Text;
 use crate::schema::*;
-use serde::{Serialize, Deserialize};
+use chrono::NaiveDateTime;
+use diesel::deserialize::FromSql;
+use diesel::expression::AsExpression;
+use diesel::pg::{Pg, PgValue};
+use diesel::serialize::ToSql;
+use diesel::sql_types::Text;
+use diesel::{deserialize::FromSqlRow, prelude::*};
+use serde::{Deserialize, Serialize};
 
 #[derive(Queryable, Serialize, Deserialize)]
 pub struct Rustacean {
@@ -57,7 +58,7 @@ pub struct User {
     pub username: String,
     #[serde(skip_serializing)]
     pub password: String,
-    pub created_at: NaiveDateTime
+    pub created_at: NaiveDateTime,
 }
 
 #[derive(Insertable)]
@@ -72,7 +73,7 @@ pub struct Role {
     pub id: i32,
     pub code: RoleCode,
     pub name: String,
-    pub created_at: NaiveDateTime
+    pub created_at: NaiveDateTime,
 }
 
 #[derive(Insertable)]
@@ -106,13 +107,14 @@ pub enum RoleCode {
     Viewer,
 }
 
-impl ToString for RoleCode {
-    fn to_string(&self) -> String {
-        match self {
-            RoleCode::Admin => String::from("admin"),
-            RoleCode::Editor => String::from("editor"),
-            RoleCode::Viewer => String::from("viewer"),
-        }
+impl fmt::Display for RoleCode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            RoleCode::Admin => "admin",
+            RoleCode::Editor => "editor",
+            RoleCode::Viewer => "viewer",
+        };
+        write!(f, "{s}")
     }
 }
 
@@ -141,7 +143,10 @@ impl FromSql<Text, Pg> for RoleCode {
 }
 
 impl ToSql<Text, Pg> for RoleCode {
-    fn to_sql<'b>(&'b self, out: &mut diesel::serialize::Output<'b, '_, Pg>) -> diesel::serialize::Result {
+    fn to_sql<'b>(
+        &'b self,
+        out: &mut diesel::serialize::Output<'b, '_, Pg>,
+    ) -> diesel::serialize::Result {
         match self {
             RoleCode::Admin => out.write_all(b"admin")?,
             RoleCode::Editor => out.write_all(b"editor")?,
