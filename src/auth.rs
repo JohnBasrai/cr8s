@@ -1,10 +1,10 @@
-use argon2::Argon2;
-use argon2::password_hash::Error;
-use argon2::{PasswordHasher, PasswordVerifier, PasswordHash};
-use argon2::password_hash::SaltString;
 use argon2::password_hash::rand_core::OsRng;
-use rand::Rng;
+use argon2::password_hash::Error;
+use argon2::password_hash::SaltString;
+use argon2::Argon2;
+use argon2::{PasswordHash, PasswordHasher, PasswordVerifier};
 use rand::distributions::Alphanumeric;
+use rand::Rng;
 
 use crate::models::User;
 
