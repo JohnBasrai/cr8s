@@ -1,0 +1,3 @@
+[default.databases]
+postgres = { url = "postgres://postgres:secret@localhost/cr8s" }
+redis    = { url = "redis://localhost:6379" }

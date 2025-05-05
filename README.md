@@ -59,46 +59,41 @@ Need more Docker tips (stream logs, cURL pokes, DB maintenance)? See [`docs/dock
 
 ---
 
+<details>
+<summary><strong>Local development (use with <code>cr8s-fe</code> frontend)</strong></summary>
+
+```bash
+cp Rocket.toml.sample Rocket.toml   # dev-only defaults
+cargo run --release                 # backend starts on :8000
+````
+
+*(For the full two-terminal walkthrough—including the frontend steps—see the **cr8s-fe** README.)*
+
+</details>
+
+
 ## 📂 Project layout
 
-```
-├── Cargo.toml
-├── CHANGELOG.md
-├── diesel.toml
-├── docker-compose.yml
-├── Dockerfile
-├── docs
-│   ├── docker-usage.md
-│   └── native-workflow.md
-├── LICENSE
-├── README.md
-├── scripts
-│   └── quickstart.sh
-├── src
-│   ├── auth.rs
-│   ├── bin
-│   │   ├── cli.rs
-│   │   └── server.rs
-│   ├── commands.rs
-│   ├── lib.rs
-│   ├── mail.rs
-│   ├── models.rs
-│   ├── repositories.rs
-│   ├── rocket_routes
-│   │   ├── authorization.rs
-│   │   ├── crates.rs
-│   │   ├── mod.rs
-│   │   └── rustaceans.rs
-│   └── schema.rs
-├── templates
-│   └── email
-│       └── digest.html
-└── tests
-    ├── authorization.rs
-    ├── common
-    │   └── mod.rs
-    ├── crates.rs
-    └── rustaceans.rs
+```text
+cr8s/
+├── Cargo.toml                 # workspace + crate metadata
+├── Rocket.toml.sample         # dev-friendly DB urls
+├── Dockerfile                 # backend container (tests & prod)
+├── docker-compose.yml         # Postgres + Redis + Rocket
+│
+├── src/                       # application code
+│   ├── bin/                   # cli.rs , server.rs entry-points
+│   ├── rocket_routes/         # REST/HTTP handlers
+│   ├── models.rs              # Diesel models
+│   ├── schema.rs              # Diesel schema (generated)
+│   └── lib.rs                 # library root (commands, auth, etc.)
+│
+├── templates/                 # Tera e-mail templates
+├── migrations/                # Diesel SQL migrations
+├── tests/                     # integration tests (HTTP & DB)
+│
+├── scripts/quickstart.sh      # one-shot dev bootstrap
+└── docs/                      # Docker tips & native workflow
 ```
 
 ---
