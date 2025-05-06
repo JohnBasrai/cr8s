@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## \[Unreleased]
 
 *No changes yet*
+---
+## \[0.2.1] - 2025-05-06
+
+### Added
+
+* Added Docker volume ownership warning to README
+* quickstart.sh now copies Rocket.toml if missing
+
+### Changed
+* Renamed Rocket.toml.sample → .Rocket.toml.template
 
 ---
 
@@ -36,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `quickstart.sh` now waits for Postgres, runs migrations, seeds admin user,
   and starts the backend
 * `README.md` updated with clearer Docker-first quickstart instructions
+
 
 ### Fixed
 

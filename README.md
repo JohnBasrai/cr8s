@@ -50,20 +50,24 @@ docker compose build              # compiles the Rust workspace into the app ima
    `cargo run --bin cli -- users create admin@example.com password123 admin`
 6. Starts the backend app container (Rocket on port 8000)
 7. ✅ Done! The backend is now ready for use with the frontend
+> ⚠️ **Note for Linux users:**  
+> When using Docker with volume mounts, you may find that the `target/` directory becomes owned by `root`.  
+> This is because the container runs as root and writes to the mounted volume.  
+> If needed, you can clean it up with:
+>
+> ```bash
+> sudo rm -rf target/
+> ```
+>
+> This doesn't affect the runtime or correctness, but may interfere with local tools that expect to write to `target/`.
 
 ---
 
-<details>
-<summary><strong>Local development (use with <code>cr8s-fe</code> frontend)</strong></summary>
-
+## Local development (use with <code>cr8s-fe</code> frontend)
 ```bash
-cp Rocket.toml.sample Rocket.toml   # dev-only defaults
-cargo run --release                 # backend starts on :8000
-````
-
+cargo run                      # backend starts on :8000
+```
 *(For the full two-terminal walkthrough—including the frontend steps—see the **cr8s-fe** README.)*
-
-</details>
 
 
 ## 📂 Project layout
