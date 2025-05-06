@@ -19,18 +19,18 @@ pub async fn login(
         .map_err(|e| match e {
             diesel::result::Error::NotFound => {
                 rocket::error!("{}", e);
-                Custom(Status::Unauthorized, json!("Invalid credentials"))
+                Custom(Status::Unauthorized, json!("error: Invalid credentials"))
             }
-            _ => server_error(e.into()),
+            _ => server_error(e),
         })?;
 
     let session_id = authorize_user(&user, credentials.into_inner())
-        .map_err(|_| Custom(Status::Unauthorized, json!("Wrong credentials")))?;
+        .map_err(|_| Custom(Status::Unauthorized, json!("error: Wrong credentials")))?;
 
     cache
         .set_ex::<String, i32, ()>(format!("sessions/{}", session_id), user.id, 3 * 60 * 60)
         .await
-        .map_err(|e| server_error(e.into()))?;
+        .map_err(server_error)?;
 
     Ok(json!({
         "token": session_id,

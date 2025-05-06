@@ -17,6 +17,11 @@ services:
     image: redis:latest
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   app:
     build: .
@@ -32,6 +37,8 @@ services:
           postgres={url=postgres://postgres:postgres@postgres:5432/app_db},
           redis={url=redis://redis:6379}
         }
+      ROCKET_PROFILE: default
+      CR8S_APP_MODE: # 👈 expecting; --release or ""
       # (optional) e-mail creds — consider .env or secrets instead
       SMTP_HOST: smtp.gmail.com
       SMTP_USERNAME: you@example.com
@@ -39,3 +46,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: [ "sh", "-c", "cargo run $${CR8S_APP_MODE} --bin server" ]

@@ -1,6 +1,5 @@
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::{Request, Response};
-use std::error::Error;
 
 use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome};
@@ -24,9 +23,12 @@ pub struct DbConn(rocket_db_pools::diesel::PgPool);
 #[database("redis")]
 pub struct CacheConn(rocket_db_pools::deadpool_redis::Pool);
 
-pub fn server_error(e: Box<dyn Error>) -> Custom<Value> {
-    rocket::error!("{}", e);
-    Custom(Status::InternalServerError, json!("Error"))
+pub fn server_error<E: std::fmt::Display>(e: E) -> Custom<Value> {
+    rocket::error!("🚨 Internal server error: {}", e); // ✅ full detail in logs
+    Custom(
+        Status::InternalServerError,
+        json!({ "error": "Something went wrong" }), // ✅ safe, clean client-facing message
+    )
 }
 
 #[rocket::options("/<_route_args..>")]
