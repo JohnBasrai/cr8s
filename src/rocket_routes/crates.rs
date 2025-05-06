@@ -11,7 +11,7 @@ pub async fn get_crates(mut db: Connection<DbConn>, _user: User) -> Result<Value
     CrateRepository::find_multiple(&mut db, 100)
         .await
         .map(|crates| json!(crates))
-        .map_err(|e| server_error(e.into()))
+        .map_err(server_error)
 }
 
 #[rocket::get("/crates/<id>")]
@@ -23,7 +23,7 @@ pub async fn view_crate(
     CrateRepository::find(&mut db, id)
         .await
         .map(|a_crate| json!(a_crate))
-        .map_err(|e| server_error(e.into()))
+        .map_err(server_error)
 }
 
 #[rocket::post("/crates", format = "json", data = "<new_crate>")]
@@ -35,7 +35,7 @@ pub async fn create_crate(
     CrateRepository::create(&mut db, new_crate.into_inner())
         .await
         .map(|a_crate| Custom(Status::Created, json!(a_crate)))
-        .map_err(|e| server_error(e.into()))
+        .map_err(server_error)
 }
 
 #[rocket::put("/crates/<id>", format = "json", data = "<a_crate>")]
@@ -48,7 +48,7 @@ pub async fn update_crate(
     CrateRepository::update(&mut db, id, a_crate.into_inner())
         .await
         .map(|a_crate| json!(a_crate))
-        .map_err(|e| server_error(e.into()))
+        .map_err(server_error)
 }
 
 #[rocket::delete("/crates/<id>")]
@@ -60,5 +60,5 @@ pub async fn delete_crate(
     CrateRepository::delete(&mut db, id)
         .await
         .map(|_| NoContent)
-        .map_err(|e| server_error(e.into()))
+        .map_err(server_error)
 }
