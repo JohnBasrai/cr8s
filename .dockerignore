@@ -1,0 +1,23 @@
+# Build artifacts
+target/
+*.log
+
+# VCS
+.git
+.gitignore
+
+# Editor config
+*.swp
+*.swo
+*.swn
+*.bak
+*.tmp
+*~
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Secrets or env files (manually verify before ignoring)
+.env
+.env.*

@@ -15,6 +15,10 @@ env:
       redis={url=redis://localhost:6379}
     }
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   test:
     runs-on: ubuntu-latest

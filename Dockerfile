@@ -1,10 +1,11 @@
-FROM rust:latest
+# Dockerfile
+ARG PROFILE=release
+FROM ghcr.io/johnbasrai/cr8s/rust-dev:latest
 
-WORKDIR /app/
-
+WORKDIR /app
 COPY . .
 
-RUN cargo install diesel_cli --no-default-features --features postgres
-RUN cargo install cargo-watch
+RUN cargo build --${PROFILE}
 
-CMD ["cargo", "watch", "--why", "-x", "build"]
+# Launch the Rocket backend (can override in Compose or CLI)
+CMD ["./target/${PROFILE}/server"]

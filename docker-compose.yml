@@ -1,6 +1,8 @@
+version: '3.9'
+
 services:
   postgres:
-    image: postgres:latest
+    image: postgres:15
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -9,43 +11,46 @@ services:
       - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
-    image: redis:latest
+    image: redis:7
     ports:
       - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
+      interval: 10s
+      timeout: 5s
       retries: 5
+    ROCKET_PROFILE: default
+    CR8S_APP_MODE: ""           # 👈 expecting: --release or ""
 
   app:
-    build: .
-    tty: true
-    ports:
-      - "8000:8000"          # expose Rocket to host
-    volumes:
-      - ./:/app/             # hot-reload / dev editing
-    environment:
-      DATABASE_URL: postgres://postgres:postgres@postgres:5432/app_db
-      ROCKET_DATABASES: |
-        {
-          postgres={url=postgres://postgres:postgres@postgres:5432/app_db},
-          redis={url=redis://redis:6379}
-        }
-      ROCKET_PROFILE: default
-      CR8S_APP_MODE: # 👈 expecting; --release or ""
-      # (optional) e-mail creds — consider .env or secrets instead
-      SMTP_HOST: smtp.gmail.com
-      SMTP_USERNAME: you@example.com
-      SMTP_PASSWORD: okks qghu trly qwot
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PROFILE: debug  # Change to release for optimized build
+    image: ghcr.io/johnbasrai/cr8s/cr8s-be:dev
+    SMTP_HOST: smtp.gmail.com
+    SMTP_USERNAME: you@example.com
+    SMTP_PASSWORD: okks qghu trly qwot
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: [ "sh", "-c", "cargo run $${CR8S_APP_MODE} --bin server" ]
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/app_db
+      ROCKET_DATABASES: |
+        {
+          postgres={url="postgres://postgres:postgres@postgres:5432/app_db"},
+          redis={url="redis://redis:6379"}
+        }
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    tty: true
