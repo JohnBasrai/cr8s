@@ -164,6 +164,7 @@ impl UserRepository {
         Ok(user)
     }
 
+    #[allow(dead_code)]
     pub async fn delete(c: &mut AsyncPgConnection, id: i32) -> QueryResult<usize> {
         diesel::delete(users_roles::table.filter(users_roles::user_id.eq(id)))
             .execute(c)

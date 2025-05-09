@@ -29,46 +29,95 @@ Docker Compose v2       # Already bundled with modern Docker
 
 ---
 
-## 🚀 Quick start (Docker-first workflow)
+## 🚀 Quick Start Options
+
+### 🧪 Development Mode (contributing to `cr8s`)
+
+Use this mode when developing or debugging `cr8s` itself. It launches Postgres, Redis, and a fully-featured development container (`cr8s-dev`) with the full Rust toolchain, Diesel CLI, and project source code mounted.
 
 ```bash
-# 0. Clone & build the image once
-git clone https://github.com/JohnBasrai/cr8s.git && cd cr8s
-docker compose build              # compiles the Rust workspace into the app image
+# One command to set up and seed the database
+./scripts/quickstart-dev.sh
 
-# 1. Run the helper script – it does the rest in one shot
-./scripts/quickstart.sh
+# Then start the backend manually (optional)
+docker compose exec dev cargo run
 ```
 
-`quickstart.sh` performs:
+---
 
-1. `docker compose down -v` – clean up containers and volumes
-2. `docker compose up -d postgres redis` – launch DB dependencies
-3. Waits for Postgres to accept connections
-4. Runs `diesel setup` and `diesel migration run` to initialize the database
-5. Creates a default admin user via the CLI:
-   `cargo run --bin cli -- users create admin@example.com password123 admin`
-6. Starts the backend app container (Rocket on port 8000)
-7. ✅ Done! The backend is now ready for use with the frontend
-> ⚠️ **Note for Linux users:**  
-> When using Docker with volume mounts, you may find that the `target/` directory becomes owned by `root`.  
-> This is because the container runs as root and writes to the mounted volume.  
-> If needed, you can clean it up with:
->
-> ```bash
-> sudo rm -rf target/
-> ```
->
-> This doesn't affect the runtime or correctness, but may interfere with local tools that expect to write to `target/`.
+### 🏃 Runtime Mode (used by `cr8s-fe` or external consumers)
+
+Use this mode when running a precompiled backend container (e.g. in `cr8s-fe/ci` or for E2E tests). It uses a minimal runtime image that contains the release build of `cr8s`.
+
+```bash
+docker compose up -d postgres redis backend
+```
+
+This will:
+- Start Postgres and Redis services
+- Launch the `backend` container using `ghcr.io/johnbasrai/cr8s/rust-runtime:latest`
+- Expose the API on [http://localhost:8000](http://localhost:8000)
+
+> This container does **not** run `diesel` migrations or seed the DB. External systems (like `cr8s-fe`) are responsible for that.
 
 ---
 
 ## Local development (use with <code>cr8s-fe</code> frontend)
+
 ```bash
 cargo run                      # backend starts on :8000
 ```
+
 *(For the full two-terminal walkthrough—including the frontend steps—see the **cr8s-fe** README.)*
 
+---
+
+### 🛠 Advanced: Editor-Friendly Dev Container (Emacs / VS Code)
+
+If you're using Emacs or VS Code and need precise file path alignment for error navigation or stack traces, you can launch the `cr8s-dev` container interactively:
+
+```bash
+./scripts/start-rust-dev
+```
+
+<details>
+<summary>📘 Why this helps (click to expand)</summary>
+
+This script:
+
+- Mounts your current directory into the container at the **same absolute path**
+  (`-v "$PWD:$PWD" -w "$PWD"`)
+  - This makes compiler errors and backtraces use real host paths, so:
+    - ✅ Both Emacs and VS Code can follow file paths when parsing compilation output
+- Launches an interactive Bash shell using the `cr8s-dev` container
+- Ensures `cargo`, `diesel`, and `rustfmt` have full access to the workspace
+- Uses your host UID and GID (via `-u $(id -u):$(id -g)`) to ensure any files created 
+  inside the container (e.g., `./target/`) are not owned by root.
+
+However, if your host UID does not match a named user in the container (like `johnb`), you may see this in the shell prompt:
+
+```
+I have no name!@0803495724cd:cr8s $ 
+```
+This is harmless — all tools still work. It simply means the UID exists but has no matching entry in /etc/passwd. You can safely ignore it.
+
+---
+
+#### 🧪 Emacs Example
+
+```emacs
+M-x compile RET cargo build --release
+```
+
+This allows Emacs to highlight compiler errors and navigate to the correct files.
+
+#### 🧪 VS Code Use
+
+Use with [Remote Containers](https://code.visualstudio.com/docs/remote/containers) or terminal-based workflows. Editor features like go-to-definition, error overlays, and task runners will behave as expected.
+
+</details>
+
+---
 
 ## 📂 Project layout
 
@@ -96,14 +145,17 @@ cr8s/
 
 ---
 
-## 🧪 Continuous Integration
+## 🧪 Continuous Integration
 
-1) GitHub Actions spins up Postgres & Redis service containers
-2) installs `diesel_cli`
-3) runs `diesel setup`
-4) and runs cargo test against the live server.
+GitHub Actions runs the CI pipeline inside the `cr8s-dev` container, ensuring full parity with local development.
 
-Clippy and rustfmt are gated with `-D warnings`, so the main branch stays clean.
+1. Spins up Postgres and Redis as service containers
+2. Runs Diesel migrations using the built-in `diesel` CLI
+3. Seeds the database with a default admin user using the CLI binary
+4. Lints with `cargo fmt` and `cargo clippy` (gated via `-D warnings`)
+5. Runs `cargo test` against the live backend
+
+Non-gating advisory checks (`cargo audit`, `cargo outdated`) are also included for visibility.
 
 ---
 

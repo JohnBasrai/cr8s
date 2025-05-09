@@ -1,22 +1,25 @@
-version: '3.9'
 
 services:
   postgres:
     image: postgres:15
+    networks:
+      - cr8s-net
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: app_db
+      POSTGRES_PASSWORD: secret
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
 
   redis:
     image: redis:7
+    networks:
+      - cr8s-net
+    restart: unless-stopped
     ports:
       - "6379:6379"
     healthcheck:
@@ -24,33 +27,38 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    ROCKET_PROFILE: default
-    CR8S_APP_MODE: ""           # 👈 expecting: --release or ""
 
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        PROFILE: debug  # Change to release for optimized build
-    image: ghcr.io/johnbasrai/cr8s/cr8s-be:dev
-    SMTP_HOST: smtp.gmail.com
-    SMTP_USERNAME: you@example.com
-    SMTP_PASSWORD: okks qghu trly qwot
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+  backend:
+    networks:
+      - cr8s-net
+    image: ghcr.io/johnbasrai/cr8s/rust-runtime:latest
+    restart: unless-stopped
     environment:
-      DATABASE_URL: postgres://postgres:postgres@postgres:5432/app_db
-      ROCKET_DATABASES: |
-        {
-          postgres={url="postgres://postgres:postgres@postgres:5432/app_db"},
-          redis={url="redis://redis:6379"}
-        }
+      ROCKET_ENV: development
+      ROCKET_ADDRESS: 0.0.0.0
     ports:
       - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: ghcr.io/johnbasrai/cr8s/rust-dev:latest
+    networks:
+      - cr8s-net
+    command: sleep infinity
     volumes:
       - .:/app
-    tty: true
+    environment:
+      DATABASE_URL: postgres://postgres:secret@postgres:5432/cr8s
+      ROCKET_ENV: development
+    depends_on:
+      - postgres
+      - redis
+
+networks:
+  cr8s-net:
+    external: true

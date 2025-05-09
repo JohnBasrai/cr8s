@@ -52,6 +52,12 @@ pub struct NewCrate {
     pub description: Option<String>,
 }
 
+impl fmt::Display for User {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} (id: {})", self.username, self.id)
+    }
+}
+
 #[derive(Queryable, Debug, Identifiable, Serialize)]
 pub struct User {
     pub id: i32,
