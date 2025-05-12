@@ -1,3 +1,4 @@
+use anyhow::Context;
 use diesel::dsl::now;
 use diesel::dsl::IntervalDsl;
 use diesel::prelude::*;
@@ -115,7 +116,7 @@ impl UserRepository {
         c: &mut AsyncPgConnection,
     ) -> QueryResult<Vec<(User, Vec<(UserRole, Role)>)>> {
         let users = users::table.load::<User>(c).await?;
-        let result = users_roles::table
+        let result = user_roles::table
             .inner_join(roles::table)
             .load::<(UserRole, Role)>(c)
             .await?
@@ -128,14 +129,17 @@ impl UserRepository {
         c: &mut AsyncPgConnection,
         new_user: NewUser,
         role_codes: Vec<RoleCode>,
-    ) -> QueryResult<User> {
+    ) -> anyhow::Result<User> {
+        // ---
+        let username = new_user.username.clone();
         let user = diesel::insert_into(users::table)
             .values(new_user)
             .get_result::<User>(c)
-            .await?;
+            .await
+            .with_context(|| format!("Failed to insert user '{}'", username))?;
 
         for role_code in role_codes {
-            let new_user_role = {
+            let new_user_roles = {
                 if let Ok(role) = RoleRepository::find_by_code(c, &role_code).await {
                     NewUserRole {
                         user_id: user.id,
@@ -145,20 +149,22 @@ impl UserRepository {
                     let name = role_code.to_string();
                     let new_role = NewRole {
                         code: role_code,
-                        name,
+                        name: name.clone(),
                     };
-                    let role = RoleRepository::create(c, new_role).await?;
+                    let role = RoleRepository::create(c, new_role)
+                        .await
+                        .with_context(|| format!("Failed to insert role: {name}"))?;
                     NewUserRole {
                         user_id: user.id,
                         role_id: role.id,
                     }
                 }
             };
-
-            diesel::insert_into(users_roles::table)
-                .values(new_user_role)
+            diesel::insert_into(user_roles::table)
+                .values(new_user_roles)
                 .get_result::<UserRole>(c)
-                .await?;
+                .await
+                .with_context(|| "Failed to insert roles")?;
         }
 
         Ok(user)
@@ -166,7 +172,7 @@ impl UserRepository {
 
     #[allow(dead_code)]
     pub async fn delete(c: &mut AsyncPgConnection, id: i32) -> QueryResult<usize> {
-        diesel::delete(users_roles::table.filter(users_roles::user_id.eq(id)))
+        diesel::delete(user_roles::table.filter(user_roles::user_id.eq(id)))
             .execute(c)
             .await?;
         diesel::delete(users::table.find(id)).execute(c).await

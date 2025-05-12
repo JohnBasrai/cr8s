@@ -1,15 +1,15 @@
 use anyhow::{anyhow, Context, Result};
 use std::str::FromStr;
 
-use diesel::ExpressionMethods;
-use diesel::QueryDsl;
+use diesel::prelude::*; // includes QueryDsl and ExpressionMethods
 use diesel_async::{AsyncConnection, AsyncPgConnection, RunQueryDsl};
 use tera::Tera;
 
 use crate::auth;
 use crate::mail::HtmlMailer;
-use crate::models::{NewUser, RoleCode};
+use crate::models::{NewUser, Role, RoleCode};
 use crate::repositories::{CrateRepository, RoleRepository, UserRepository};
+use crate::schema::roles;
 
 async fn load_db_connection() -> Result<AsyncPgConnection> {
     // ---
@@ -43,7 +43,7 @@ pub async fn create_user(
         .map_err(|e| anyhow::anyhow!("Password hashing failed: {e}"))?;
 
     let new_user = NewUser {
-        username,
+        username: username.clone(),
         password: password_hash,
     };
 
@@ -52,11 +52,15 @@ pub async fn create_user(
         .map(|v| RoleCode::from_str(v.as_str()).map_err(|_| anyhow!("Invalid role code: {}", v)))
         .collect::<Result<_, _>>()?;
 
-    let user = UserRepository::create(&mut c, new_user, role_enums).await?;
+    let user = UserRepository::create(&mut c, new_user, role_enums)
+        .await
+        .with_context(|| "Failed to create user: {username}")?;
 
     println!("User created {:?}", user);
-    let roles = RoleRepository::find_by_user(&mut c, &user).await?;
-    println!("Roles assigned {:?}", roles);
+
+    let assigned_roles = RoleRepository::find_by_user(&mut c, &user).await?;
+    println!("Roles assigned: {:?}", assigned_roles);
+
     Ok(())
 }
 
@@ -122,12 +126,11 @@ pub async fn list_users_formatted() -> Result<Vec<String>> {
 pub async fn user_exists(user: &str) -> Result<bool> {
     // ---
     let mut c = load_db_connection().await?;
-    let user = user.to_owned();
-
-    // TODO: find_by_username should take &str, someday
-    let _ = UserRepository::find_by_username(&mut c, &user).await?;
-
-    Ok(true)
+    match UserRepository::find_by_username(&mut c, &user.to_string()).await {
+        Ok(_) => Ok(true),
+        Err(diesel::result::Error::NotFound) => Ok(false),
+        Err(e) => Err(e).context("Failed to check if user exists"),
+    }
 }
 
 /// Deletes a user from the database by numeric ID.
@@ -177,5 +180,44 @@ pub async fn digest_send(email: String, hours_since: i32) -> Result<()> {
             .send_digest(&email, &crates)
             .map_err(|e| anyhow::anyhow!("Failed to send email: {:?}", e))?;
     }
+    Ok(())
+}
+
+pub async fn init_default_roles() -> Result<()> {
+    // ---
+    let mut conn = load_db_connection().await?;
+
+    let codes = vec![RoleCode::Admin, RoleCode::Editor, RoleCode::Viewer];
+
+    for role_code in &codes {
+        let exists = roles::table
+            .filter(roles::code.eq(role_code))
+            .first::<Role>(&mut conn)
+            .await
+            .optional()
+            .context("Failed to query roles")?;
+
+        if exists.is_none() {
+            let role_code_clone = role_code.clone();
+            diesel::insert_into(roles::table)
+                .values((
+                    roles::code.eq(role_code),
+                    roles::name.eq(role_code.to_string()), // reuse Display or FromStr logic
+                ))
+                .execute(&mut conn)
+                .await
+                .with_context(|| format!("Failed to insert role {:?}", role_code_clone))?;
+
+            // TODO: Consider returning Vec<String> and letting CLI print, like list_users_formatted()
+            // Useful for:
+            //     Logging vs CLI vs Web UI
+            //     Tests that want to verify output
+
+            println!("✅ Inserted role: {:?}", role_code);
+        } else {
+            println!("ℹ️ Role {:?} already exists", role_code);
+        }
+    }
+
     Ok(())
 }

@@ -13,7 +13,7 @@ rocket           = { version = "0.5", features = ["json"] }
 # Diesel 2.1 stack (compatible versions)
 rocket_db_pools  = { version = "0.2",   features = ["diesel_postgres", "deadpool_redis"] }
 diesel           = { version = "2.1",   features = ["chrono"] }          # stays on 2.1
-diesel-async     = { version = "0.4.1", features = ["postgres"] }
+diesel-async     = { version = "0.4.1", features = ["bb8", "postgres"] }
 
 # bumped minor/patch on misc crates
 serde            = "1.0"
@@ -27,5 +27,4 @@ lettre           = "0.11"
 anyhow = "1.0.98"
 
 [dev-dependencies]
-ctor = "0.4.2"
 reqwest          = { version = "0.12", features = ["json", "blocking"] }

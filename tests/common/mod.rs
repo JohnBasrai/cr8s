@@ -1,44 +1,10 @@
-use ctor::ctor;
 use reqwest::blocking::{Client, ClientBuilder};
 use reqwest::header;
 use reqwest::StatusCode;
 use serde_json::{json, Value};
 use std::process::Command;
-use std::sync::Once;
 
 pub static APP_HOST: &str = "http://127.0.0.1:8000";
-
-static INIT: Once = Once::new();
-
-/// Runs global test setup once at test binary startup.
-///
-/// This is invoked automatically via `#[ctor]` and ensures
-/// the test environment is initialized before any tests run.
-#[ctor]
-pub fn init_test_env() {
-    // ---
-    println!("🔧 Running global test setup...");
-    ensure_db_is_ready();
-}
-
-/// Ensures the test environment is ready by building the CLI binary.
-///
-/// This function is called once per test suite run (via `Once`) to ensure
-/// the `cli` binary is available for use in tests (e.g., creating users).
-///
-/// Note: This assumes `bootstrap.sh` has already created the database
-/// and run all necessary Diesel migrations.
-fn ensure_db_is_ready() {
-    INIT.call_once(|| {
-        println!("🔧 Building CLI binary...");
-        let build_status = Command::new("cargo")
-            .args(["build", "--bin", "cli"])
-            .status()
-            .expect("Failed to invoke cargo");
-
-        assert!(build_status.success(), "`cargo build --bin cli` failed");
-    });
-}
 
 pub fn create_test_rustacean(client: &Client) -> Value {
     // ---

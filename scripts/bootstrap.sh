@@ -15,7 +15,7 @@ fi
 SENTINAL_FILE=/tmp/_BOOTSTRAP_SENTINAL
 
 if docker exec -it ${CONTAINER} test -f ${SENTINAL_FILE}; then
-    echo "$0: Container ${CONTAINER} is already bootstrap'd"
+    echo "$0: Container ${CONTAINER} is already bootstrapped — skipping setup."
     exit 0
 fi
 
@@ -34,13 +34,8 @@ pwd; ls -la diesel.toml
 docker exec "${CONTAINER}" diesel setup
 docker exec "${CONTAINER}" diesel migration run
 
-echo "👤 3. Seeding default users..."
+echo "👤 3. Seeding database..."
 docker exec "${CONTAINER}" bash -c "
   export CARGO_HOME=$CARGO_HOME
-  cargo run --bin cli -- users create test_admin password123 admin
-"
-
-docker exec "${CONTAINER}" bash -c "
-  export CARGO_HOME=$CARGO_HOME
-  cargo run --bin cli -- users create test_viewer password123 viewer
-"
+  cargo run --bin cli -- roles init-defaults
+  "

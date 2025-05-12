@@ -15,6 +15,10 @@ enum Command {
         #[command(subcommand)]
         subcommand: UserSubcommand,
     },
+    Roles {
+        #[command(subcommand)]
+        subcommand: RoleSubcommand,
+    },
 }
 
 // ┌──────────────────────────────────────────────┐
@@ -50,25 +54,41 @@ pub enum UserSubcommand {
     List,
 }
 
+#[derive(clap::Parser, Debug)]
+pub enum RoleSubcommand {
+    /// Seed default roles into the database (admin, editor, viewer)
+    InitDefaults,
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     // ---
     let cli = Cli::parse();
 
-    let Command::Users { subcommand } = cli.command;
+    match cli.command {
+        Command::Users { subcommand } => match subcommand {
+            UserSubcommand::Create {
+                username,
+                password,
+                roles,
+            } => Cli::create_user(username, password, roles).await,
+            UserSubcommand::Delete { id_or_username } => Cli::delete_user(&id_or_username).await,
+            UserSubcommand::List => Cli::list_users().await,
+        },
 
-    match subcommand {
-        UserSubcommand::Create {
-            username,
-            password,
-            roles,
-        } => Cli::create_user(username, password, roles).await,
-        UserSubcommand::Delete { id_or_username } => Cli::delete_user(&id_or_username).await,
-        UserSubcommand::List => Cli::list_users().await,
+        Command::Roles { subcommand } => match subcommand {
+            RoleSubcommand::InitDefaults => Cli::init_default_roles().await,
+        },
     }
 }
 
 impl Cli {
+    // ---
+    async fn init_default_roles() -> Result<()> {
+        // ---
+        commands::init_default_roles().await
+    }
+
     async fn user_exists(username: &str) -> Result<bool> {
         // ---
         if commands::user_exists(username).await? {
@@ -86,7 +106,7 @@ impl Cli {
 
         commands::create_user(username.clone(), password, roles)
             .await
-            .with_context(|| "Failed to create or retrieve user")?;
+            .context("Failed to create or retrieve user")?;
 
         println!("User created: {:?}", username);
         Ok(())
