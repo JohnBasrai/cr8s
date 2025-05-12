@@ -1,5 +1,5 @@
-use crate::models::{NewUser, User};
-use crate::schema::users;
+use crate::models::{NewRole, NewUser, RoleCode, User};
+use crate::schema::{roles, users};
 use anyhow::{Context, Result};
 use diesel_async::AsyncPgConnection;
 use diesel_async::RunQueryDsl as AsyncRunQueryDsl; // Aliased for disambiguation
@@ -9,7 +9,27 @@ pub async fn establish_test_connection() -> Result<AsyncPgConnection> {
     use diesel_async::AsyncConnection;
     let url = std::env::var("DATABASE_URL").context("DATABASE_URL must be set")?;
 
-    let conn = AsyncPgConnection::establish(&url).await?;
+    let mut conn = AsyncPgConnection::establish(&url).await?;
+
+    diesel::insert_into(roles::table)
+        .values(&[
+            NewRole {
+                code: RoleCode::Admin,
+                name: "Admin".into(),
+            },
+            NewRole {
+                code: RoleCode::Editor,
+                name: "Editor".into(),
+            },
+            NewRole {
+                code: RoleCode::Viewer,
+                name: "Viewer".into(),
+            },
+        ])
+        .on_conflict_do_nothing()
+        .execute(&mut conn)
+        .await
+        .context("seeding default roles")?;
     Ok(conn)
 }
 

@@ -1,21 +1,16 @@
 use anyhow::{ensure, Context, Result};
+use common::*;
 use cr8s::models::NewUser;
 use cr8s::test_support::{assign_role, insert_test_user};
 use diesel_async::AsyncPgConnection;
-use reqwest::{blocking::Client, StatusCode};
+use reqwest::{Client, StatusCode};
 use serde_json::json;
 
-pub mod common;
-use crate::common::APP_HOST;
+use common::APP_HOST;
 use cr8s::test_support::establish_test_connection;
 
 /// Creates the user with the specified role using Diesel, not the CLI.
 ///
-/// # Arguments
-/// * `conn` - A mutable reference to an async database connection.
-/// * `username` - The user's email address (used as the login).
-/// * `password_hash` - The hashed password (you must hash it beforehand).
-/// * `role` - Role code string (e.g., "Admin", "Viewer").
 pub async fn create_user(
     conn: &mut AsyncPgConnection,
     username: &str,
@@ -29,12 +24,15 @@ pub async fn create_user(
     };
 
     let user = insert_test_user(conn, &new_user).await?;
-    assign_role(conn, user.id, role).await?;
+    assign_role(conn, user.id, role)
+        .await
+        .context("failed to assign Admin role")?;
 
     Ok(())
 }
 
 /// Tests that a newly created admin user can successfully log in via the API.
+///
 #[tokio::test]
 async fn test_user_with_admin_role_can_access_admin_route() -> Result<()> {
     // ---
@@ -56,6 +54,7 @@ async fn test_user_with_admin_role_can_access_admin_route() -> Result<()> {
         .post(format!("{}/login", APP_HOST))
         .json(&json!({ "username": user.username, "password": user.password }))
         .send()
+        .await
         .context("Login request failed")?;
 
     ensure!(
@@ -67,8 +66,9 @@ async fn test_user_with_admin_role_can_access_admin_route() -> Result<()> {
 }
 
 /// Tests that a logged-in viewer user can access their identity via `GET /me`.
+///
 #[tokio::test]
-async fn test_me() -> Result<()> {
+async fn test_me_reponse_has_correct_user_details() -> Result<()> {
     // ---
     let username = "test_me_user";
     let password = "password123";
@@ -84,6 +84,7 @@ async fn test_me() -> Result<()> {
         .post(format!("{}/login", APP_HOST))
         .json(&json!({ "username": username, "password": password }))
         .send()
+        .await
         .context("Login request failed")?;
 
     ensure!(
@@ -103,6 +104,7 @@ async fn test_me() -> Result<()> {
         .get(format!("{}/me", APP_HOST))
         .header("cookie", cookie)
         .send()
+        .await
         .context("GET /me request failed")?;
 
     ensure!(
@@ -119,6 +121,7 @@ async fn test_me() -> Result<()> {
 
     let json: MeResponse = me
         .json()
+        .await
         .context("Failed to parse JSON from /me response")?;
 
     ensure!(
