@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0] – 2025-05-14
 
 ### Added
+- /health endpoint with Redis check, returns 200/"OK" 
 - Migrated integration tests under `src/tests/` for tighter crate-level access and test visibility
 - `test_utils::common` helpers for:
   - database setup, role assignment, user login
@@ -34,6 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - These steps do not block PRs but provide visibility into project health
 
 ### Changed
+- CI workflow now waits for Rocket server readiness using curl -sf /health instead of HTML grep.
+- Added redis = "0.25" explicitly to Cargo.toml to enable use of cmd("PING").
 - Replaced CLI-based test setup with direct Diesel calls
 - All tests use unique users per role to prevent conflicts in suite runs
 - Removed `tests/` directory and old `common/mod.rs`, `test_support.rs`, `authorization.rs`

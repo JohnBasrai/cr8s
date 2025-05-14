@@ -13,6 +13,7 @@ async fn main() {
         .mount(
             "/",
             rocket::routes![
+                cr8s::rocket_routes::health::health,
                 cr8s::rocket_routes::options,
                 cr8s::rocket_routes::authorization::me,
                 cr8s::rocket_routes::authorization::login,

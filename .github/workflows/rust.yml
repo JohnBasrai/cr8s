@@ -50,13 +50,16 @@ jobs:
         run: docker exec cr8s-dev-ci cargo clippy --all-targets --all-features -- -D warnings
 
       - name: 🛠️ Build backend server
-        run: docker exec cr8s-dev-ci cargo build --bin server
+        run: docker exec -i cr8s-dev-ci cargo build --bin server
 
       - name: 🚀⏳ Launch backend server in the background, wait for it start up
         run: |
-          docker exec -d cr8s-dev-ci cargo run --bin server
+          docker exec -d cr8s-dev-ci cargo run --bin server > /tmp/server.log 2>&1 &'
+          sleep 2
+          docker exec cr8s-dev-ci ps aux
+          docker logs cr8s-dev-ci --tail 50
           for i in {1..10}; do
-            if docker exec cr8s-dev-ci curl -s http://localhost:8000 | grep -q Rocket; then
+            if docker exec cr8s-dev-ci curl -sf http://localhost:8000/health > /dev/null; then
               echo "✅ Rocket server is responding"
               exit 0
             fi

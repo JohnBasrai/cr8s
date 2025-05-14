@@ -13,6 +13,7 @@ use crate::repositories::{RoleRepository, UserRepository};
 
 pub mod authorization;
 pub mod crates;
+pub mod health;
 pub mod rustaceans;
 
 #[derive(rocket_db_pools::Database)]
