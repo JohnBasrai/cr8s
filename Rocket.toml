@@ -1,0 +1,9 @@
+[default]
+address = "0.0.0.0"
+port = 8000
+secret_key = "5QDp6vSx/tJua0NNpu1B76a99pGSITm5RX+Nls/EdoA="  # Must be at least 256 bits (32 bytes)
+
+[default.databases]
+postgres = { url = "postgres://postgres:secret@cr8s-postgres-1:5432/cr8s" }
+redis    = { url = "redis://cr8s-redis-1:6379" }
+
