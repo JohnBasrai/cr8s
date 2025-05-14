@@ -14,30 +14,47 @@ pub async fn login(
     mut cache: Connection<CacheConn>,
     credentials: Json<Credentials>,
 ) -> Result<Value, Custom<Value>> {
-    let user = UserRepository::find_by_username(&mut db, &credentials.username)
-        .await
-        .map_err(|e| match e {
-            diesel::result::Error::NotFound => {
-                rocket::error!("{}", e);
-                Custom(Status::Unauthorized, json!("error: Invalid credentials"))
-            }
-            _ => server_error(e),
-        })?;
+    // ---
+    tracing::info!("🔐 Login attempt for: {}", credentials.username);
 
-    let session_id = authorize_user(&user, credentials.into_inner())
-        .map_err(|_| Custom(Status::Unauthorized, json!("error: Wrong credentials")))?;
+    let user = match UserRepository::find_by_username(&mut db, &credentials.username).await {
+        Ok(user) => {
+            tracing::info!("👤 Found user: {}", user.username);
+            user
+        }
+        Err(diesel::result::Error::NotFound) => {
+            tracing::warn!("🚫 User not found: {}", credentials.username);
+            return Err(Custom(
+                Status::Unauthorized,
+                json!("error: Invalid credentials"),
+            ));
+        }
+        Err(e) => return Err(server_error(e)),
+    };
 
-    cache
-        .set_ex::<String, i32, ()>(format!("sessions/{}", session_id), user.id, 3 * 60 * 60)
-        .await
-        .map_err(server_error)?;
+    let creds = credentials.into_inner();
+    match authorize_user(&user, creds.clone()) {
+        Ok(session_id) => {
+            tracing::info!("✅ Password accepted for: {}", user.username);
+            cache
+                .set_ex::<String, i32, ()>(format!("sessions/{}", session_id), user.id, 3 * 60 * 60)
+                .await
+                .map_err(server_error)?;
 
-    Ok(json!({
-        "token": session_id,
-    }))
+            Ok(json!({ "token": session_id }))
+        }
+        Err(_) => {
+            tracing::warn!("❌ Password verification failed for: {}", user.username);
+            Err(Custom(
+                Status::Unauthorized,
+                json!("error: Wrong credentials"),
+            ))
+        }
+    }
 }
 
 #[rocket::get("/me")]
 pub fn me(user: User) -> Value {
+    tracing::info!("✅ Authenticated user: {:?}", user);
     json!(user)
 }

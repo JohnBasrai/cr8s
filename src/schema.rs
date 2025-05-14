@@ -58,10 +58,4 @@ diesel::joinable!(crates -> rustaceans (rustacean_id));
 diesel::joinable!(user_roles -> roles (role_id));
 diesel::joinable!(user_roles -> users (user_id));
 
-diesel::allow_tables_to_appear_in_same_query!(
-    crates,
-    roles,
-    rustaceans,
-    user_roles,
-    users,
-);
+diesel::allow_tables_to_appear_in_same_query!(crates, roles, rustaceans, user_roles, users,);

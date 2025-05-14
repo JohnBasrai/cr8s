@@ -12,7 +12,7 @@ Sample full‑stack **Rust** web service demonstrating Rocket, Diesel/PostgreSQL
 | DB    | **Diesel v2** + **PostgreSQL** | Relational data model & migrations |
 | Cache | **Redis** | Session / ephemeral storage |
 | Admin | CLI binary (`cargo run --bin cli`) | Manage users & seed data |
-| Tests | `tokio`, `reqwest` | Integration tests hitting live server |
+| Tests | `tokio`, `reqwest`, `diesel_async` | Async/await integration tests with role-based auth and Diesel-backed setup |
 | Dev   | **Docker Compose** | One‑command reproducible stack |
 | CI    | **GitHub Actions** | Lint → migrate → build → test |
 
@@ -26,6 +26,40 @@ Docker Compose v2       # Already bundled with modern Docker
 ```
 
 > 📝 Prefer running everything natively? Check the community‑supported instructions in [`docs/native-workflow.md`](docs/native-workflow.md).
+
+<details>
+<summary>🧰 Native Dependencies (libpq) — only needed if building without Docker</summary>
+
+If you're building `cr8s` outside of Docker, Diesel/Postgres requires the native PostgreSQL client library (`libpq`) to link correctly.
+
+**Install the right system package:**
+
+#### ✅ Debian/Ubuntu
+```bash
+sudo apt install libpq-dev
+````
+
+#### ✅ Fedora/RHEL
+
+```bash
+sudo dnf install postgresql-devel
+```
+
+#### ✅ Alpine (for minimal containers)
+
+```bash
+apk add postgresql-dev
+```
+
+If you see an error like:
+
+```
+/usr/bin/ld: cannot find -lpq: No such file or directory
+```
+
+…it means `libpq` is missing. Install it using the steps above.
+
+</details>
 
 ---
 
@@ -137,7 +171,7 @@ cr8s/
 │
 ├── templates/                 # Tera e-mail templates
 ├── migrations/                # Diesel SQL migrations
-├── tests/                     # integration tests (HTTP & DB)
+├── src/tests/                 # async integration tests (migrated from /tests)
 │
 ├── scripts/quickstart.sh      # one-shot dev bootstrap
 └── docs/                      # Docker tips & native workflow

@@ -1,5 +1,4 @@
 use anyhow::{anyhow, Context, Result};
-use std::str::FromStr;
 
 use diesel::prelude::*; // includes QueryDsl and ExpressionMethods
 use diesel_async::{AsyncConnection, AsyncPgConnection, RunQueryDsl};
@@ -34,7 +33,7 @@ async fn load_db_connection() -> Result<AsyncPgConnection> {
 pub async fn create_user(
     username: String,
     password: String,
-    role_codes: Vec<String>,
+    role_codes: Vec<RoleCode>,
 ) -> Result<()> {
     // ---
     let mut c = load_db_connection().await?;
@@ -47,12 +46,7 @@ pub async fn create_user(
         password: password_hash,
     };
 
-    let role_enums: Vec<RoleCode> = role_codes
-        .iter()
-        .map(|v| RoleCode::from_str(v.as_str()).map_err(|_| anyhow!("Invalid role code: {}", v)))
-        .collect::<Result<_, _>>()?;
-
-    let user = UserRepository::create(&mut c, new_user, role_enums)
+    let user = UserRepository::create(&mut c, new_user, role_codes)
         .await
         .with_context(|| "Failed to create user: {username}")?;
 

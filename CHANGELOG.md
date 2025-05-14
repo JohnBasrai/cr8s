@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## \[Unreleased]
 
 ### Added
+- Migrated integration tests under `src/tests/` for tighter crate-level access and test visibility
+- `test_utils::common` helpers for:
+  - database setup, role assignment, user login
+  - reusable `unique_username()` generator
+- Role-based test clients using `Editor`, `Viewer`, `Admin` variants
+- Added `ensure_status!` macro for consistent API test assertions
+- Enabled `tracing` logs in Rocket server and test startup
+- Introduced `test_support.rs` with helpers:
+  - `establish_test_connection`, `insert_test_user`, `assign_role`
 - `scripts/start-rust-dev`: launches interactive `cr8s-dev` container with host path mapping and correct user permissions
   - Supports Emacs `M-x compile`, VS Code navigation, and safe `./target` ownership
 - `README.md`: new expandable documentation for editor-integrated development using `start-rust-dev`
@@ -22,6 +31,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - These steps do not block PRs but provide visibility into project health
 
 ### Changed
+- Replaced CLI-based test setup with direct Diesel calls
+- All tests use unique users per role to prevent conflicts in suite runs
+- Removed `tests/` directory and old `common/mod.rs`, `test_support.rs`, `authorization.rs`
+- Upgraded testing infrastructure to use async/await pattern
+- Improved error handling with contextualized messages
+- Enhanced test reliability with proper cleanup and setup
+- Fixed module structure and imports for easier maintenance
+- Added macros for common testing patterns
+- Converted assertions to use ensure! for better diagnostics
+- Renamed table `users_roles` → `user_roles` in: SQL schema & updated code to match
+- Removed unused `ctor` setup and `Command::new("cli")` logic from tests
+- Updated `NewUser` model usage to match schema
+- Replaced CLI-based user setup in tests with direct Diesel calls
 - Removed legacy `app` service from `docker-compose.yml`.
 - Simplified environment config: replaced deprecated `ROCKET_PROFILE` with `ROCKET_ENV`.
 - Removed unused `CR8S_APP_MODE` toggle pending re-evaluation.
@@ -31,6 +53,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   legacy `app` service.
 - Seeding logic is centralized into `quickstart-dev.sh` to ensure consistent DB
   initialization across environments.
+
+### Removed
+- Legacy test support module `test_support.rs`
+- Commented/unused test CLI login helpers
 
 ---
 ## \[0.2.1] - 2025-05-06

@@ -8,7 +8,7 @@ use rand::Rng;
 
 use crate::models::User;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, Clone)]
 pub struct Credentials {
     pub username: String,
     pub password: String,

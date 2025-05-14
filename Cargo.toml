@@ -7,13 +7,15 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio            = { version = "1",   features = ["macros", "rt", "rt-multi-thread"] }
-rocket           = { version = "0.5", features = ["json"] }
+reqwest          = { version = "0.12", features = ["json", "blocking"] }
+tokio            = { version = "1",   features  = ["macros", "rt", "rt-multi-thread"] }
+rocket           = { version = "0.5", features  = ["json"] }
 
 # Diesel 2.1 stack (compatible versions)
 rocket_db_pools  = { version = "0.2",   features = ["diesel_postgres", "deadpool_redis"] }
-diesel           = { version = "2.1",   features = ["chrono"] }          # stays on 2.1
+diesel           = { version = "2.1",   features = ["chrono", "postgres"] } # stays on 2.1
 diesel-async     = { version = "0.4.1", features = ["bb8", "postgres"] }
+diesel-derive-enum = "2.1"
 
 # bumped minor/patch on misc crates
 serde            = "1.0"
@@ -24,7 +26,9 @@ argon2           = "0.5"
 rand             = "0.9"
 tera             = "1.20"
 lettre           = "0.11"
-anyhow = "1.0.98"
+anyhow           = "1.0.98"
+tracing          = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+uuid             = { version = "1.16.0", features = ["v4"] }
 
 [dev-dependencies]
-reqwest          = { version = "0.12", features = ["json", "blocking"] }

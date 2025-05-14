@@ -1,5 +1,7 @@
+use super::test_utils::common::*;
+use crate::ensure_status;
+use crate::models::RoleCode;
 use anyhow::{ensure, Context, Result};
-use common::*;
 use reqwest::StatusCode;
 use serde_json::{json, Value};
 
@@ -10,14 +12,16 @@ async fn test_get_crates() -> anyhow::Result<()> {
     use serde_json::Value;
 
     // Setup
-    let client = common::get_client_with_logged_in_admin().await?;
-    let rustacean = common::create_test_rustacean(&client).await?;
-    let a_crate = common::create_test_crate(&client, &rustacean).await?;
-    let b_crate = common::create_test_crate(&client, &rustacean).await?;
+    let password = "passwd-tgc";
+    let username = unique_username("user-tgc");
+    let client = get_logged_in_client(&username, password, RoleCode::Editor).await?;
+    let rustacean = create_test_rustacean(&client).await?;
+    let a_crate = create_test_crate(&client, &rustacean).await?;
+    let b_crate = create_test_crate(&client, &rustacean).await?;
 
     // Test
     let response = client
-        .get(format!("{}/crates", common::APP_HOST))
+        .get(format!("{}/crates", APP_HOST))
         .send()
         .await
         .context("failed to send GET /crates request")?;
@@ -41,22 +45,22 @@ async fn test_get_crates() -> anyhow::Result<()> {
     );
 
     // Cleanup
-    common::delete_test_crate(&client, a_crate).await?;
-    common::delete_test_crate(&client, b_crate).await?;
-    common::delete_test_rustacean(&client, rustacean).await?;
+    delete_test_crate(&client, a_crate).await?;
+    delete_test_crate(&client, b_crate).await?;
+    delete_test_rustacean(&client, rustacean).await?;
 
     Ok(())
 }
 
 #[tokio::test]
 async fn test_get_crates_not_loggedin_fails() -> anyhow::Result<()> {
-    use anyhow::{ensure, Context};
+    use anyhow::Context;
     use reqwest::StatusCode;
 
     // Setup
     let client = reqwest::Client::new();
     let response = client
-        .get(format!("{}/crates", common::APP_HOST))
+        .get(format!("{}/crates", APP_HOST))
         .send()
         .await
         .context("failed to send GET /crates request as unauthenticated user")?;
@@ -70,13 +74,14 @@ async fn test_get_crates_not_loggedin_fails() -> anyhow::Result<()> {
 async fn test_view_crate() -> Result<()> {
     // ---
     // Setup
-    let client = common::get_client_with_logged_in_admin().await?;
-    let rustacean = common::create_test_rustacean(&client).await?;
-    let a_crate = common::create_test_crate(&client, &rustacean).await?;
+    let username = unique_username("user-tvc");
+    let client = get_logged_in_client(&username, "passwd-tvc", RoleCode::Editor).await?;
+    let rustacean = create_test_rustacean(&client).await?;
+    let a_crate = create_test_crate(&client, &rustacean).await?;
 
     // Test
     let response = client
-        .get(format!("{}/crates/{}", common::APP_HOST, a_crate["id"]))
+        .get(format!("{}/crates/{}", APP_HOST, a_crate["id"]))
         .send()
         .await
         .context("failed to send GET /crates/{id} request")?;
@@ -110,8 +115,8 @@ async fn test_view_crate() -> Result<()> {
     );
 
     // Cleanup
-    common::delete_test_crate(&client, actual).await?;
-    common::delete_test_rustacean(&client, rustacean).await?;
+    delete_test_crate(&client, actual).await?;
+    delete_test_rustacean(&client, rustacean).await?;
 
     Ok(())
 }
@@ -123,13 +128,14 @@ async fn test_update_crate() -> anyhow::Result<()> {
     use serde_json::json;
 
     // Setup
-    let client = common::get_client_with_logged_in_admin().await?;
-    let rustacean = common::create_test_rustacean(&client).await?;
-    let mut a_crate = common::create_test_crate(&client, &rustacean).await?;
+    let username = unique_username("user-tuc");
+    let client = get_logged_in_client(&username, "passwd-tuc", RoleCode::Editor).await?;
+    let rustacean = create_test_rustacean(&client).await?;
+    let mut a_crate = create_test_crate(&client, &rustacean).await?;
 
     // Test: update crate with new metadata
     let response = client
-        .put(format!("{}/crates/{}", common::APP_HOST, a_crate["id"]))
+        .put(format!("{}/crates/{}", APP_HOST, a_crate["id"]))
         .json(&json!({
             "code": "fooz",
             "name": "Fooz crate",
@@ -170,7 +176,7 @@ async fn test_update_crate() -> anyhow::Result<()> {
     );
 
     // Test: update with long description and switch author
-    let rustacean2 = common::create_test_rustacean(&client).await?;
+    let rustacean2 = create_test_rustacean(&client).await?;
     let long_description = r#"\
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque gravida aliquet \n\
         arcu, non maximus urna iaculis et. Nam eu ante eu dolor volutpat maximus. Sed tincidunt \n\
@@ -185,7 +191,7 @@ async fn test_update_crate() -> anyhow::Result<()> {
 "#;
 
     let response = client
-        .put(format!("{}/crates/{}", common::APP_HOST, a_crate["id"]))
+        .put(format!("{}/crates/{}", APP_HOST, a_crate["id"]))
         .json(&json!({
             "code": "fooz",
             "name": "Fooz crate",
@@ -239,26 +245,29 @@ async fn test_update_crate() -> anyhow::Result<()> {
     );
 
     // Cleanup
-    common::delete_test_crate(&client, a_crate).await?;
-    common::delete_test_rustacean(&client, rustacean).await?;
-    common::delete_test_rustacean(&client, rustacean2).await?;
+    delete_test_crate(&client, a_crate).await?;
+    delete_test_rustacean(&client, rustacean).await?;
+    delete_test_rustacean(&client, rustacean2).await?;
 
     Ok(())
 }
 
 #[tokio::test]
 async fn test_delete_crate() -> anyhow::Result<()> {
-    use anyhow::{ensure, Context};
-    use reqwest::StatusCode;
-
     // Setup
-    let client = common::get_client_with_logged_in_admin().await?;
-    let rustacean = common::create_test_rustacean(&client).await?;
-    let a_crate = common::create_test_crate(&client, &rustacean).await?;
+    let password = "passwd-tdc";
+    let username = unique_username("user-tdc");
+
+    println!("👤 Creating user: {username}");
+    println!("🔐 Logging in as: {username} with password: {password}");
+
+    let client = get_logged_in_client(&username, password, RoleCode::Editor).await?;
+    let rustacean = create_test_rustacean(&client).await?;
+    let a_crate = create_test_crate(&client, &rustacean).await?;
 
     // Test
     let response = client
-        .delete(format!("{}/crates/{}", common::APP_HOST, a_crate["id"]))
+        .delete(format!("{}/crates/{}", APP_HOST, a_crate["id"]))
         .send()
         .await
         .context("failed to send DELETE /crates/{id} request")?;
@@ -266,7 +275,7 @@ async fn test_delete_crate() -> anyhow::Result<()> {
     ensure_status!(response, StatusCode::NO_CONTENT);
 
     // Cleanup
-    common::delete_test_rustacean(&client, rustacean).await?;
+    delete_test_rustacean(&client, rustacean).await?;
 
     Ok(())
 }

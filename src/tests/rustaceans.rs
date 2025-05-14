@@ -1,19 +1,24 @@
-use anyhow::{ensure, Context, Result};
-use common::*;
+use crate::ensure_status;
+use crate::models::RoleCode;
+use crate::tests::test_utils::common::*;
+use anyhow::{ensure, Context};
 use reqwest::{Client, StatusCode};
 use serde_json::{json, Value};
 
 #[tokio::test]
 async fn test_get_rustaceans() -> anyhow::Result<()> {
     // ---
-    let client_adm = common::get_client_with_logged_in_admin().await?;
-    let rustacean1 = common::create_test_rustacean(&client_adm).await?;
-    let rustacean2 = common::create_test_rustacean(&client_adm).await?;
+    let password = "passwd-tgr";
+    let username = unique_username("user-tgr-admin");
+    let client_adm = get_logged_in_client(&username, password, RoleCode::Admin).await?;
+    let rustacean1 = create_test_rustacean(&client_adm).await?;
+    let rustacean2 = create_test_rustacean(&client_adm).await?;
 
-    // Test
-    let client_view = common::get_client_with_logged_in_viewer().await?;
+    // test
+    let username = unique_username("user-tgr-viewer");
+    let client_view = get_logged_in_client(&username, password, RoleCode::Viewer).await?;
     let response = client_view
-        .get(format!("{}/rustaceans", common::APP_HOST))
+        .get(format!("{}/rustaceans", APP_HOST))
         .send()
         .await
         .context("failed to send GET /rustaceans")?;
@@ -39,8 +44,8 @@ async fn test_get_rustaceans() -> anyhow::Result<()> {
     );
 
     // Cleanup
-    common::delete_test_rustacean(&client_adm, rustacean1).await?;
-    common::delete_test_rustacean(&client_adm, rustacean2).await?;
+    delete_test_rustacean(&client_adm, rustacean1).await?;
+    delete_test_rustacean(&client_adm, rustacean2).await?;
 
     Ok(())
 }
@@ -51,7 +56,7 @@ async fn test_get_rustaceans_not_loggedin_fails() -> anyhow::Result<()> {
     let client = Client::new();
 
     let response = client
-        .get(format!("{}/rustaceans", common::APP_HOST))
+        .get(format!("{}/rustaceans", APP_HOST))
         .send()
         .await
         .context("failed to send GET /rustaceans without login")?;
@@ -64,10 +69,12 @@ async fn test_get_rustaceans_not_loggedin_fails() -> anyhow::Result<()> {
 #[tokio::test]
 async fn test_create_rustacean() -> anyhow::Result<()> {
     // ---
-    let client = common::get_client_with_logged_in_admin().await?;
+    let password = "passwd-tcr";
+    let username = unique_username("user-tcr");
+    let client = get_logged_in_client(&username, password, RoleCode::Editor).await?;
 
     let response = client
-        .post(format!("{}/rustaceans", common::APP_HOST))
+        .post(format!("{}/rustaceans", APP_HOST))
         .json(&json!({
             "name": "Foo bar",
             "email": "foo@bar.com"
@@ -95,23 +102,23 @@ async fn test_create_rustacean() -> anyhow::Result<()> {
         "unexpected rustacean response: {rustacean:?}"
     );
 
-    common::delete_test_rustacean(&client, rustacean).await?;
+    delete_test_rustacean(&client, rustacean).await?;
     Ok(())
 }
 
 #[tokio::test]
 async fn test_view_rustacean() -> anyhow::Result<()> {
     // ---
-    let client = common::get_client_with_logged_in_admin().await?;
-    let rustacean = common::create_test_rustacean(&client).await?;
+    let password = "passwd-tvr";
 
-    let client_view = common::get_client_with_logged_in_viewer().await?;
+    let (editor_name, viewer_name) = (unique_username("user-tvr-e"), unique_username("user-tvr-v"));
+
+    let client = get_logged_in_client(&editor_name, password, RoleCode::Editor).await?;
+    let rustacean = create_test_rustacean(&client).await?;
+
+    let client_view = get_logged_in_client(&viewer_name, password, RoleCode::Viewer).await?;
     let response = client_view
-        .get(format!(
-            "{}/rustaceans/{}",
-            common::APP_HOST,
-            rustacean["id"]
-        ))
+        .get(format!("{}/rustaceans/{}", APP_HOST, rustacean["id"]))
         .send()
         .await
         .context("failed to send GET /rustaceans/{id}")?;
@@ -135,22 +142,19 @@ async fn test_view_rustacean() -> anyhow::Result<()> {
         "unexpected rustacean response: {fetched:?}"
     );
 
-    common::delete_test_rustacean(&client, fetched).await?;
+    delete_test_rustacean(&client, fetched).await?;
     Ok(())
 }
 
 #[tokio::test]
 async fn test_update_rustacean() -> anyhow::Result<()> {
     // ---
-    let client = common::get_client_with_logged_in_admin().await?;
-    let rustacean = common::create_test_rustacean(&client).await?;
+    let username = unique_username("user-tur");
+    let client = get_logged_in_client(&username, "passwd-tur", RoleCode::Editor).await?;
+    let rustacean = create_test_rustacean(&client).await?;
 
     let response = client
-        .put(format!(
-            "{}/rustaceans/{}",
-            common::APP_HOST,
-            rustacean["id"]
-        ))
+        .put(format!("{}/rustaceans/{}", APP_HOST, rustacean["id"]))
         .json(&json!({
             "name": "Fooz bar",
             "email": "fooz@bar.com"
@@ -178,22 +182,19 @@ async fn test_update_rustacean() -> anyhow::Result<()> {
         "unexpected rustacean update result: {updated:?}"
     );
 
-    common::delete_test_rustacean(&client, updated).await?;
+    delete_test_rustacean(&client, updated).await?;
     Ok(())
 }
 
 #[tokio::test]
 async fn test_delete_rustacean() -> anyhow::Result<()> {
     // ---
-    let client = common::get_client_with_logged_in_admin().await?;
-    let rustacean = common::create_test_rustacean(&client).await?;
+    let username = unique_username("user-tdr");
+    let client = get_logged_in_client(&username, "passwd-tdr", RoleCode::Editor).await?;
+    let rustacean = create_test_rustacean(&client).await?;
 
     let response = client
-        .delete(format!(
-            "{}/rustaceans/{}",
-            common::APP_HOST,
-            rustacean["id"]
-        ))
+        .delete(format!("{}/rustaceans/{}", APP_HOST, rustacean["id"]))
         .send()
         .await
         .context("failed to send DELETE /rustaceans/{id}")?;

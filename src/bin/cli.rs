@@ -1,6 +1,8 @@
 use anyhow::{anyhow, Context, Result};
 use clap::{Parser, Subcommand};
 use cr8s::commands;
+use cr8s::models::RoleCode;
+//use diesel_derive_enum::DbEnum;
 
 #[derive(Parser)]
 #[command(name = "cli", version, about = "User management")]
@@ -40,8 +42,8 @@ pub enum UserSubcommand {
         password: String,
 
         /// One or more roles to assign (e.g. admin editor viewer)
-        #[arg(required = true)]
-        roles: Vec<String>,
+        #[arg(required = true, value_enum)]
+        roles: Vec<RoleCode>,
     },
 
     /// Delete a user by ID or username
@@ -98,7 +100,7 @@ impl Cli {
         }
     }
 
-    async fn create_user(username: String, password: String, roles: Vec<String>) -> Result<()> {
+    async fn create_user(username: String, password: String, roles: Vec<RoleCode>) -> Result<()> {
         // ---
         if Self::user_exists(&username).await? {
             return Err(anyhow!("User already exists"));

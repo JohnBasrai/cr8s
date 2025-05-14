@@ -1,9 +1,14 @@
 extern crate cr8s;
 
 use rocket_db_pools::Database;
+//use tracing_subscriber::{fmt, EnvFilter};
 
 #[rocket::main]
 async fn main() {
+    // ---
+    init_tracing(); // ✅
+    tracing::info!("✅ backend starting...");
+
     let _ = rocket::build()
         .mount(
             "/",
@@ -28,4 +33,13 @@ async fn main() {
         .attach(cr8s::rocket_routes::DbConn::init())
         .launch()
         .await;
+}
+
+fn init_tracing() {
+    // ---
+    use tracing_subscriber::{fmt, EnvFilter};
+
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")); // or "debug"
+
+    fmt().with_env_filter(filter).with_target(true).init();
 }

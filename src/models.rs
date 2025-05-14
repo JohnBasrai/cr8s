@@ -10,6 +10,7 @@ use diesel::pg::{Pg, PgValue};
 use diesel::serialize::ToSql;
 use diesel::sql_types::Text;
 use diesel::{deserialize::FromSqlRow, prelude::*};
+use diesel_derive_enum::DbEnum;
 use serde::{Deserialize, Serialize};
 
 #[derive(Queryable, Serialize, Deserialize)]
@@ -105,7 +106,17 @@ pub struct NewUserRole {
     pub role_id: i32,
 }
 
-#[derive(AsExpression, Debug, FromSqlRow, Clone)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    AsExpression,    // ✅ Enables using RoleCode in .filter(roles::code.eq(...)) queries
+    FromSqlRow,      // ✅ Required by Diesel to deserialize RoleCode from DB rows
+    DbEnum,          // ✅ diesel-derive-enum for Postgres enum support
+    clap::ValueEnum, // ✅ For Clap v4 CLI integration
+)]
 #[diesel(sql_type=Text)]
 pub enum RoleCode {
     Admin,

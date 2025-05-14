@@ -7,6 +7,7 @@
 /// ```
 ///
 /// If the third argument is given, it prefixes the error message.
+///
 #[macro_export]
 macro_rules! ensure_status {
     // with context prefix
