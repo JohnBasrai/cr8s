@@ -22,7 +22,7 @@ docker run --detach --network=cr8s-net \
   -w "$PWD" \
   -e CARGO_HOME="$CARGO_HOME" \
   -e DATABASE_URL="$DATABASE_URL" \
-  ghcr.io/johnbasrai/cr8s/rust-dev:latest \
+  ghcr.io/johnbasrai/cr8s/rust-dev:v1.83 \
   sleep infinity
 
 ensure_running() {
