@@ -54,7 +54,11 @@ jobs:
 
       - name: 🚀⏳ Launch backend server in the background, wait for it start up
         run: |
-          docker exec cr8s-dev-ci sh -c 'cargo run --bin server > /tmp/server.log 2>&1 &'
+          echo "PWD: $PWD"
+          docker exec cr8s-dev-ci pwd
+          docker exec cr8s-dev-ci ls -l Rocket.toml
+          docker exec cr8s-dev-ci cat   Rocket.toml
+          docker exec -w "$(pwd)" cr8s-dev-ci sh -c 'cargo run --bin server > /tmp/server.log 2>&1 &'
           sleep 2
           docker exec cr8s-dev-ci ps aux
           docker exec cr8s-dev-ci tail -n 50 /tmp/server.log
