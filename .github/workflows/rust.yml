@@ -35,6 +35,11 @@ jobs:
       - name: 🔨 Bootstrap migrations and seed DB
         run: ./scripts/bootstrap.sh
 
+      - name: 🧪 rustc and rustfmt version
+        run: |
+          docker exec cr8s-dev-ci rustc --version
+          docker exec cr8s-dev-ci rustfmt --version
+
       - name: 📎 Format Check (cargo fmt)
         run: docker exec cr8s-dev-ci cargo fmt --check
 
