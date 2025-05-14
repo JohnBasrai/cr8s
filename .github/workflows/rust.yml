@@ -12,30 +12,8 @@ jobs:
     name: Run Tests in cr8s-dev
     runs-on: ubuntu-latest
 
-    container:
-      image: ghcr.io/johnbasrai/cr8s/rust-dev:latest
-      options: --user root
-
-    services:
-      postgres:
-        image: postgres:15
-        ports:
-          - 5432:5432
-        env:
-          POSTGRES_PASSWORD: secret
-          CONTAINER_TAG: ci
-        options: >-
-          --health-cmd="pg_isready -U postgres"
-          --health-interval=5s
-          --health-timeout=2s
-          --health-retries=10
-
-      redis:
-        image: redis:7
-        ports:
-          - 6379:6379
-
     env:
+      CONTAINER_TAG: ci
       DATABASE_URL: postgres://postgres:secret@postgres:5432/cr8s
 
     steps:
@@ -43,35 +21,35 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 🔧 Start dev container
-        run: ./scripts/dev/start.sh
+        # ./scripts/start.sh:
+        # - Launches the cr8s-dev container with correct user ID, env vars, and volume mounts
+        # - Ensures required docker-compose services (redis, postgres) are running
+        # - Mounts the project directory into the container at the same path
+        # - Creates cr8s-net Docker network if missing
+        # - Exits early if the container is already running
+        run: ./scripts/start.sh
+
+      - name: 🐳 List running containers
+        run: docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
       - name: 🔨 Bootstrap migrations and seed DB
-        run: ./scripts/dev/bootstrap.sh
+        run: ./scripts/bootstrap.sh
 
       - name: 📎 Format Check (cargo fmt)
-        run: docker exec cr8s-dev-1000 cargo fmt --check
+        run: docker exec cr8s-dev-ci cargo fmt --check
 
       - name: 👀 Lint (cargo clippy)
-        run: docker exec cr8s-dev-1000 cargo clippy --all-targets --all-features -- -D warnings
-
-      - name: 📜 Run Diesel migrations
-        run: |
-          diesel setup
-          diesel migration run
-
-      - name: 👤 Seed admin user via CLI
-        run: |
-          cargo run --bin cli -- users create admin@example.com password123 admin
+        run: docker exec cr8s-dev-ci cargo clippy --all-targets --all-features -- -D warnings
 
       - name: 🧪 Run tests
-        run: cargo test
+        run: docker exec cr8s-dev-ci cargo test --all-targets --all-features
 
       - name: 🛡️ Security Audit (cargo audit)
-        run: cargo audit || true
+        run: docker exec cr8s-dev-ci cargo audit || true
         continue-on-error: true
 
       - name: 📦 Dependency Check (cargo outdated)
-        run: cargo outdated || true
+        run: docker exec cr8s-dev-ci cargo outdated || true
         continue-on-error: true
 
       - name: 🛑 Shut down services
