@@ -49,6 +49,23 @@ jobs:
       - name: 👀 Lint (cargo clippy)
         run: docker exec cr8s-dev-ci cargo clippy --all-targets --all-features -- -D warnings
 
+      - name: 🛠️ Build backend server
+        run: docker exec cr8s-dev-ci cargo build --bin server
+
+      - name: 🚀⏳ Launch backend server in the background, wait for it start up
+        run: |
+          docker exec -d cr8s-dev-ci cargo run --bin server
+          for i in {1..10}; do
+            if docker exec cr8s-dev-ci curl -s http://localhost:8000 | grep -q Rocket; then
+              echo "✅ Rocket server is responding"
+              exit 0
+            fi
+            echo "⏳ Waiting for Rocket to start ($i/10)..."
+            sleep 1
+          done
+          echo "❌ Rocket did not start in time"
+          exit 1
+
       - name: 🧪 Run tests
         run: docker exec cr8s-dev-ci cargo test --all-targets --all-features
 
