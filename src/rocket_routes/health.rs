@@ -1,0 +1,21 @@
+use crate::rocket_routes::CacheConn;
+use redis::cmd;
+use rocket::get;
+use rocket::http::Status;
+use rocket_db_pools::Connection;
+
+#[get("/health")]
+pub async fn health(mut redis: Connection<CacheConn>) -> (Status, &'static str) {
+    // ---
+    tracing::debug!("🐾 Health check...");
+
+    let result: redis::RedisResult<String> = cmd("PING").query_async(redis.as_mut()).await;
+
+    match result {
+        Ok(_) => (Status::Ok, "OK"),
+        Err(e) => {
+            tracing::warn!("Redis ping failed: {e}");
+            (Status::ServiceUnavailable, "Unavailable")
+        }
+    }
+}

@@ -1,6 +1,6 @@
 # Dockerfile
 ARG PROFILE=release
-FROM ghcr.io/johnbasrai/cr8s/rust-dev:latest
+FROM ghcr.io/johnbasrai/cr8s/rust-dev:1.83
 
 WORKDIR /app
 COPY . .

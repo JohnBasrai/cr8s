@@ -10,6 +10,7 @@ use diesel::pg::{Pg, PgValue};
 use diesel::serialize::ToSql;
 use diesel::sql_types::Text;
 use diesel::{deserialize::FromSqlRow, prelude::*};
+use diesel_derive_enum::DbEnum;
 use serde::{Deserialize, Serialize};
 
 #[derive(Queryable, Serialize, Deserialize)]
@@ -52,6 +53,12 @@ pub struct NewCrate {
     pub description: Option<String>,
 }
 
+impl fmt::Display for User {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} (id: {})", self.username, self.id)
+    }
+}
+
 #[derive(Queryable, Debug, Identifiable, Serialize)]
 pub struct User {
     pub id: i32,
@@ -86,20 +93,30 @@ pub struct NewRole {
 #[derive(Queryable, Associations, Identifiable, Debug)]
 #[diesel(belongs_to(User))]
 #[diesel(belongs_to(Role))]
-#[diesel(table_name=users_roles)]
+#[diesel(table_name=user_roles)]
 pub struct UserRole {
     pub id: i32,
     pub user_id: i32,
     pub role_id: i32,
 }
 #[derive(Insertable)]
-#[diesel(table_name=users_roles)]
+#[diesel(table_name=user_roles)]
 pub struct NewUserRole {
     pub user_id: i32,
     pub role_id: i32,
 }
 
-#[derive(AsExpression, Debug, FromSqlRow)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    AsExpression,    // ✅ Enables using RoleCode in .filter(roles::code.eq(...)) queries
+    FromSqlRow,      // ✅ Required by Diesel to deserialize RoleCode from DB rows
+    DbEnum,          // ✅ diesel-derive-enum for Postgres enum support
+    clap::ValueEnum, // ✅ For Clap v4 CLI integration
+)]
 #[diesel(sql_type=Text)]
 pub enum RoleCode {
     Admin,
@@ -110,9 +127,9 @@ pub enum RoleCode {
 impl fmt::Display for RoleCode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
-            RoleCode::Admin => "admin",
-            RoleCode::Editor => "editor",
-            RoleCode::Viewer => "viewer",
+            RoleCode::Admin => "Admin",
+            RoleCode::Editor => "Editor",
+            RoleCode::Viewer => "Viewer",
         };
         write!(f, "{s}")
     }
@@ -123,9 +140,9 @@ impl FromStr for RoleCode {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "admin" => Ok(RoleCode::Admin),
-            "editor" => Ok(RoleCode::Editor),
-            "viewer" => Ok(RoleCode::Viewer),
+            "Admin" => Ok(RoleCode::Admin),
+            "Editor" => Ok(RoleCode::Editor),
+            "Viewer" => Ok(RoleCode::Viewer),
             _ => Err(()),
         }
     }
@@ -134,9 +151,9 @@ impl FromStr for RoleCode {
 impl FromSql<Text, Pg> for RoleCode {
     fn from_sql(value: PgValue<'_>) -> diesel::deserialize::Result<Self> {
         match value.as_bytes() {
-            b"admin" => Ok(RoleCode::Admin),
-            b"editor" => Ok(RoleCode::Editor),
-            b"viewer" => Ok(RoleCode::Viewer),
+            b"Admin" => Ok(RoleCode::Admin),
+            b"Editor" => Ok(RoleCode::Editor),
+            b"Viewer" => Ok(RoleCode::Viewer),
             _ => Ok(RoleCode::Viewer),
         }
     }
@@ -148,9 +165,9 @@ impl ToSql<Text, Pg> for RoleCode {
         out: &mut diesel::serialize::Output<'b, '_, Pg>,
     ) -> diesel::serialize::Result {
         match self {
-            RoleCode::Admin => out.write_all(b"admin")?,
-            RoleCode::Editor => out.write_all(b"editor")?,
-            RoleCode::Viewer => out.write_all(b"viewer")?,
+            RoleCode::Admin => out.write_all(b"Admin")?,
+            RoleCode::Editor => out.write_all(b"Editor")?,
+            RoleCode::Viewer => out.write_all(b"Viewer")?,
         };
         Ok(diesel::serialize::IsNull::No)
     }

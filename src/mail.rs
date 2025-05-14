@@ -1,41 +1,65 @@
-use lettre::message::header::ContentType;
-use lettre::message::MessageBuilder;
+use anyhow::{anyhow, Result};
+use chrono::Datelike;
 use lettre::transport::smtp::authentication::Credentials;
-use lettre::transport::smtp::response::Response;
+use lettre::Message;
 use lettre::{SmtpTransport, Transport};
-use std::error::Error;
 use tera::{Context, Tera};
 
+use crate::models::Crate;
+
 pub struct HtmlMailer {
-    pub template_engine: Tera,
-    pub smtp_host: String,
-    pub smtp_username: String,
-    pub smtp_password: String,
+    mailer: SmtpTransport,
+    template_engine: Tera,
+    smtp_username: String,
 }
 
 impl HtmlMailer {
-    pub fn send(
-        self,
-        to: String,
-        template_name: &str,
-        template_context: Context,
-    ) -> Result<Response, Box<dyn Error>> {
-        let html_body = self
-            .template_engine
-            .render(template_name, &template_context)?;
-
-        let message = MessageBuilder::new()
-            .subject("Cr8s digest")
-            .from("Cr8s <noreply@cr8s.com>".parse()?)
-            .to(to.parse()?)
-            .header(ContentType::TEXT_HTML)
-            .body(html_body)?;
-
-        let credentials = Credentials::new(self.smtp_username, self.smtp_password);
-        let mailer = SmtpTransport::relay(&self.smtp_host)?
-            .credentials(credentials)
+    pub fn new(
+        template_engine: Tera,
+        host: String,
+        username: String,
+        password: String,
+    ) -> Result<Self> {
+        // ---
+        let mailer = SmtpTransport::relay(&host)?
+            .credentials(Credentials::new(username.clone(), password))
             .build();
 
-        mailer.send(&message).map_err(|e| e.into())
+        Ok(Self {
+            mailer,
+            template_engine,
+            smtp_username: username,
+        })
+    }
+
+    pub fn send_digest(&self, email: &str, crates: &[Crate]) -> Result<()> {
+        // --
+        if !crates.is_empty() {
+            println!("Sending digest for {} crates", crates.len());
+            let year = chrono::Utc::now().year();
+
+            let mut context = Context::new();
+            context.insert("crates", crates);
+            context.insert("year", &year);
+
+            let body = self
+                .template_engine
+                .render("email/digest.html", &context)
+                .map_err(|e| anyhow!("Failed to render email template: {}", e))?;
+
+            let message = Message::builder()
+                .from(self.smtp_username.parse()?)
+                .to(email.parse()?)
+                .subject("Your Crate Digest")
+                .body(body)
+                .map_err(|e| anyhow!("Failed to build email message: {}", e))?;
+
+            self.mailer
+                .send(&message)
+                .map(|_res| ()) // discard lettre::Response
+                .map_err(|e| anyhow!("Failed to send email: {}", e))?;
+        }
+
+        Ok(())
     }
 }
