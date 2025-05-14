@@ -192,7 +192,7 @@ pub async fn init_default_roles() -> Result<()> {
             .context("Failed to query roles")?;
 
         if exists.is_none() {
-            let role_code_clone = role_code.clone();
+            let role_code_clone = *role_code;
             diesel::insert_into(roles::table)
                 .values((
                     roles::code.eq(role_code),
