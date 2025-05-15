@@ -55,7 +55,6 @@ jobs:
       - name: 🚀⏳ Launch backend server in the background, wait for it start up
         run: |
           echo "PWD: $PWD"
-          docker exec -w "$(pwd)" cr8s-dev-ci sh -c 'pwd; ls -la; test -f Rocket.toml && cat Rocket.toml'
           docker exec -w "$(pwd)" cr8s-dev-ci \
               sh -c 'cargo run --bin server > /tmp/server.log 2>&1 &' || true
           sleep 2
@@ -84,5 +83,5 @@ jobs:
         continue-on-error: true
 
       - name: 🛑 Shut down services
-        run: ./scripts/dev/stop.sh
+        run: ./scripts/stop.sh
         continue-on-error: true

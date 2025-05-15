@@ -17,6 +17,7 @@ docker network inspect cr8s-net &>/dev/null || docker network create cr8s-net
 
 docker run --detach --network=cr8s-net \
   --name "${CONTAINER}" \
+  -p 8000:8000 \
   -u "${CR8S_USER_TAG}" \
   -v "$PWD:$PWD" \
   -w "$PWD" \
