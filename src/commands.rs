@@ -10,21 +10,40 @@ use crate::models::{NewUser, Role, RoleCode};
 use crate::repositories::{CrateRepository, RoleRepository, UserRepository};
 use crate::schema::roles;
 
+use diesel::deserialize::QueryableByName;
+use diesel::sql_types::Text;
+
+#[derive(Debug, QueryableByName)]
+struct ServerAddr {
+    #[diesel(sql_type = Text)]
+    ip: String,
+}
+
 async fn load_db_connection() -> Result<AsyncPgConnection> {
     // ---
     let database_url = match std::env::var("DATABASE_URL") {
         Ok(url) => url,
         Err(err) => {
-            eprintln!("Cannot connect to Postgres:{err}");
+            tracing::warn!("Cannot connect to Postgres: {err}");
             return Err(anyhow!(err));
         }
     };
 
     match AsyncPgConnection::establish(&database_url).await {
-        Ok(conn) => Ok(conn),
+        Ok(mut conn) => {
+            match diesel::sql_query("SELECT inet_server_addr()::inet::text AS ip")
+                .get_result::<ServerAddr>(&mut conn)
+                .await
+            {
+                Ok(ServerAddr { ip }) => tracing::info!("🧠 Connected to Postgres at IP: {}", ip),
+                Err(e) => tracing::warn!("⚠️ Could not query server IP: {e}"),
+            }
+
+            Ok(conn)
+        }
         Err(err) => {
-            let msg = format!("Cannot connect to Postgres:{err}");
-            eprintln!("{}", msg);
+            let msg = format!("Cannot connect to Postgres: {err}");
+            tracing::warn!("{msg}");
             Err(anyhow!(msg))
         }
     }
@@ -50,10 +69,10 @@ pub async fn create_user(
         .await
         .with_context(|| "Failed to create user: {username}")?;
 
-    println!("User created {:?}", user);
+    tracing::info!("User created {:?}", user);
 
     let assigned_roles = RoleRepository::find_by_user(&mut c, &user).await?;
-    println!("Roles assigned: {:?}", assigned_roles);
+    tracing::info!("Roles assigned: {:?}", assigned_roles);
 
     Ok(())
 }
@@ -119,11 +138,14 @@ pub async fn list_users_formatted() -> Result<Vec<String>> {
 
 pub async fn user_exists(user: &str) -> Result<bool> {
     // ---
-    let mut c = load_db_connection().await?;
+    let mut c = load_db_connection()
+        .await
+        .context("Failed to connect to database while checking if user exists")?;
+
     match UserRepository::find_by_username(&mut c, &user.to_string()).await {
-        Ok(_) => Ok(true),
-        Err(diesel::result::Error::NotFound) => Ok(false),
-        Err(e) => Err(e).context("Failed to check if user exists"),
+        Ok(_) => Ok(true),                                 // User found
+        Err(diesel::result::Error::NotFound) => Ok(false), // User not found
+        Err(e) => Err(e).context("Failed to query user existence in database"), // e.g., connection reset
     }
 }
 
@@ -162,7 +184,7 @@ pub async fn digest_send(email: String, hours_since: i32) -> Result<()> {
     let crates = CrateRepository::find_since(&mut c, hours_since).await?;
 
     if !crates.is_empty() {
-        println!("Sending digest for {} crates", crates.len());
+        tracing::info!("Sending digest for {} crates", crates.len());
 
         let hostname = std::env::var("SMTP_HOST").context("Missing SMTP_HOST env var")?;
         let username = std::env::var("SMTP_USERNAME").context("Missing SMTP_USERNAME env var")?;
@@ -207,9 +229,9 @@ pub async fn init_default_roles() -> Result<()> {
             //     Logging vs CLI vs Web UI
             //     Tests that want to verify output
 
-            println!("✅ Inserted role: {:?}", role_code);
+            tracing::info!("✅ Inserted role: {:?}", role_code);
         } else {
-            println!("ℹ️ Role {:?} already exists", role_code);
+            tracing::info!("ℹ️ Role {:?} already exists", role_code);
         }
     }
 

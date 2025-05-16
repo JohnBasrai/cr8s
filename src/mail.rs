@@ -35,7 +35,7 @@ impl HtmlMailer {
     pub fn send_digest(&self, email: &str, crates: &[Crate]) -> Result<()> {
         // --
         if !crates.is_empty() {
-            println!("Sending digest for {} crates", crates.len());
+            tracing::info!("Sending digest for {} crates", crates.len());
             let year = chrono::Utc::now().year();
 
             let mut context = Context::new();

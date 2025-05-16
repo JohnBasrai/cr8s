@@ -65,6 +65,14 @@ pub enum RoleSubcommand {
 #[tokio::main]
 async fn main() -> Result<()> {
     // ---
+
+    // Set up tracing subscriber for CLI logging
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .with_target(false)
+        .compact()
+        .init();
+
     let cli = Cli::parse();
 
     match cli.command {
@@ -91,26 +99,19 @@ impl Cli {
         commands::init_default_roles().await
     }
 
-    async fn user_exists(username: &str) -> Result<bool> {
-        // ---
-        if commands::user_exists(username).await? {
-            Err(anyhow!("User already exists"))
-        } else {
-            Ok(true)
-        }
-    }
-
     async fn create_user(username: String, password: String, roles: Vec<RoleCode>) -> Result<()> {
         // ---
-        if Self::user_exists(&username).await? {
-            return Err(anyhow!("User already exists"));
+        let user_exists = commands::user_exists(&username).await?;
+
+        if user_exists {
+            return Err(anyhow!("User '{}' already exists.", username));
         }
 
         commands::create_user(username.clone(), password, roles)
             .await
             .context("Failed to create or retrieve user")?;
 
-        println!("User created: {:?}", username);
+        tracing::info!("✅ User created: {}", username);
         Ok(())
     }
 
@@ -121,7 +122,7 @@ impl Cli {
             .with_context(|| "Failed to list users")?;
 
         for u in users {
-            println!("{u}");
+            tracing::info!("{u}");
         }
 
         Ok(())
@@ -137,7 +138,7 @@ impl Cli {
 
         result.with_context(|| "Failed to delete user")?;
 
-        println!("User deleted.");
+        tracing::info!("User deleted.");
         Ok(())
     }
 } // impl Cli

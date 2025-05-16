@@ -106,6 +106,9 @@ impl UserRepository {
         c: &mut AsyncPgConnection,
         username: &String,
     ) -> QueryResult<User> {
+        // ---
+        tracing::info!("🔍 Querying for username = {:?}", username);
+
         users::table
             .filter(users::username.eq(username))
             .get_result(c)
