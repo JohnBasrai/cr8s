@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## \[Unreleased]
+---
+
+## [v0.3.1] – 2025-05-17
+### Added
+- `Rocket.toml.template` with `%{VAR}%` placeholders for dynamic build-time config
+- `scripts/build-images.sh` for dev + CI container builds
+- `scripts/start-backend.sh` for launching backend server inside Docker build
+- Redis `/ping` route for CI and readiness testing
+- Docker Compose healthchecks for Redis and cr8s-server (/health)
+
+### Changed
+- `Rocket.toml` is now generated at build time and ignored by Git
+- CI now builds, tests, and verifies images with live server integration
+- `docker-compose.yml` updated to support clean dependency start via `depends_on`
+- `start.sh` and `stop.sh` simplified to use `docker compose up/down`
+
+### Fixed
+- `DATABASE_URL` and `REDIS_URL` substitution bugs in CI
+- Redis misconfig with `connection_info` replaced by working `url =` form
+- Integration tests now pass consistently with backend running during `cargo test`
+
+### Removed
+- Deprecated `.Rocket.toml.template` (inlined into `Rocket.toml.template`)
+- Obsolete cr8s-dev container logic from `start.sh`, and `stop.sh`
+- Deleted obsolete `shell.sh`
 
 ---
 ## [0.3.0] – 2025-05-14
