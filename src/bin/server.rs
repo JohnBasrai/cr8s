@@ -7,12 +7,18 @@ use rocket_db_pools::Database;
 async fn main() {
     // ---
     init_tracing(); // ✅
+
     tracing::info!("✅ backend starting...");
+
+    let figment = rocket::Config::figment();
+    let redis_config: Result<String, _> = figment.extract_inner("default.databases.redis.url");
+    tracing::info!("🚨 Rocket sees redis.url = {:?}", redis_config);
 
     let _ = rocket::build()
         .mount(
             "/",
             rocket::routes![
+                cr8s::rocket_routes::health::redis_ping,
                 cr8s::rocket_routes::health::health,
                 cr8s::rocket_routes::options,
                 cr8s::rocket_routes::authorization::me,

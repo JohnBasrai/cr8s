@@ -9,10 +9,8 @@ edition = "2021"
 [dependencies]
 reqwest          = { version = "0.12", features = ["json", "blocking"] }
 tokio            = { version = "1",   features  = ["macros", "rt", "rt-multi-thread"] }
-rocket           = { version = "0.5", features  = ["json"] }
-
-# Diesel 2.1 stack (compatible versions)
-rocket_db_pools  = { version = "0.2",   features = ["diesel_postgres", "deadpool_redis"] }
+rocket           = { version = "0.5.0-rc.3", features = ["json"] }
+rocket_db_pools  = { version = "0.2.0", features = ["diesel_postgres", "deadpool_redis"] }
 diesel           = { version = "2.1",   features = ["chrono", "postgres"] } # stays on 2.1
 diesel-async     = { version = "0.4.1", features = ["bb8", "postgres"] }
 diesel-derive-enum = "2.1"
