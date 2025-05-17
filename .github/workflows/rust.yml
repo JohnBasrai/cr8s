@@ -27,7 +27,6 @@ jobs:
           - 6379:6379
 
     env:
-      VERSION:         ${{ steps.get_version.outputs.version }}
       DATABASE_URL:    postgres://postgres:secret@postgres:5432/cr8s
       CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
       GITHUB_TOKEN:    ${{ secrets.GITHUB_TOKEN }}
@@ -47,12 +46,16 @@ jobs:
 
       - name: 📦 Push both images
         run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          echo "VERSION = $VERSION"
           echo "📦 Pushing cr8s-server:${VERSION} and cr8s-cli:${VERSION}..."
           docker push ghcr.io/johnbasrai/cr8s/cr8s-server:${VERSION}
           docker push ghcr.io/johnbasrai/cr8s/cr8s-cli:${VERSION}
 
       - name: 🧪 Redis smoke test
         run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          echo "VERSION = $VERSION"
           docker run --rm \
             ghcr.io/johnbasrai/cr8s/cr8s-cli:${VERSION} \
             cli redis ping
