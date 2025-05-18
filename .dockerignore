@@ -1,23 +1,20 @@
-# Build artifacts
-target/
-*.log
-
-# VCS
-.git
-.gitignore
-
-# Editor config
-*.swp
-*.swo
-*.swn
-*.bak
-*.tmp
 *~
-
-# OS noise
+*.bak
+# Build artifacts
 .DS_Store
-Thumbs.db
-
-# Secrets or env files (manually verify before ignoring)
+# Editor config
 .env
 .env.*
+.git
+.gitignore
+*.log
+# OS noise
+# Secrets or env files (manually verify before ignoring)
+*.swn
+*.swo
+*.swp
+Rocket.toml
+target/
+Thumbs.db
+*.tmp
+# VCS

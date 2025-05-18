@@ -19,3 +19,14 @@ pub async fn health(mut redis: Connection<CacheConn>) -> (Status, &'static str) 
         }
     }
 }
+
+#[get("/ping")]
+pub async fn redis_ping(mut redis: Connection<CacheConn>) -> (Status, String) {
+    match cmd("PING").query_async(redis.as_mut()).await {
+        Ok(resp) => (Status::Ok, resp),
+        Err(e) => {
+            tracing::warn!("Redis ping failed: {e}");
+            (Status::ServiceUnavailable, "Unavailable".into())
+        }
+    }
+}
