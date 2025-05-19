@@ -4,11 +4,10 @@ A handful of everyday commands for working with **cr8s** via Docker Compose.
 
 ---
 
-## Start the API for manual testing
+## Start the API for manual testing using fully built containers
 
 ```bash
-# Build image & launch full stack (detached)
-docker compose up --build -d        # app + postgres + redis
+docker compose up --build -d  # app(server) + postgres + redis
 
 # Tail the Rocket logs
 docker compose logs -f app
@@ -22,14 +21,24 @@ curl http://127.0.0.1:8000/health
 ## One‑liner: recreate DB & rerun tests
 
 ```bash
-docker compose down        # stop any running services
+docker compose down       # stop any running containers
 docker compose up -d postgres redis
-# fresh migrations
-docker compose run --rm app diesel setup
-# run tests in isolated container
-docker compose run --rm --service-ports app \
-  bash -c 'cargo run --bin server & sleep 3 && cargo test -- --test-threads=1'
+
+# extract rust-dev version from Dockerfile
+VERSION=$(awk '$1 == "FROM" && $2 ~ /rust-dev:/ { split($2, v, ":"); print v[2]; exit }' Dockerfile)
+RUN="docker run --rm -v $PWD:$PWD -w $PWD -u $(id -u):$(id -g) ghcr.io/johnbasrai/cr8s/rust-dev:$VERSION"
+
+# To run cargo tool chain
+$RUN cargo [run, clean build, clippy, audit, outdated, deny, ] ...
+
+# fresh migrations using diesel CLI
+$RUN diesel setup
+$RUN diesel migration run
+
+# run tests using native cargo (optional: use docker run cr8s-test-runner)
+cargo test --workspace --all-targets --all-features
 ```
+> Note to creat the test containers `cr8s-test-runner` and `cr8s-test-seeder` you will need to run `scripts/dev/build-images.sh`
 
 ---
 

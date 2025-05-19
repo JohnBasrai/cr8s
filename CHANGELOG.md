@@ -8,6 +8,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## \[Unreleased]
 ---
 
+## [0.3.2] – Unreleased
+
+### 🔧 Infrastructure & Tooling
+
+- Restructured dev and runtime scripts into `scripts/dev/` and `scripts/run/`
+- Added support for multi-target Docker builds:
+  - `cr8s-server` and `cr8s-cli` runtime containers
+  - `cli-seeder` image for database seeding
+  - `test-runner` image for containerized testing
+- Removed support for dev container with hot reload (`start-rust-dev`)
+- Added local-only build script: `scripts/dev/build-images.sh`
+- CI and dev builds now share common infrastructure, improving parity
+- Removed legacy bootstrap and backend-start scripts
+
+### 🧪 Testing & Developer Experience
+
+- Database migrations and seeding now run during the Docker `builder` stage
+- Added one-liner dev commands for rebuilding DB and running tests
+- Improved container naming and tag management for local workflows
+
+### 📚 Documentation
+
+- Rewrote `README.md` to reflect container-only dev/testing flow
+- Removed outdated references to native workflows
+- Added new doc: [`docs/docker-usage.md`](docs/docker-usage.md)
+
+---
 ## [v0.3.1] – 2025-05-17
 ### Added
 - `Rocket.toml.template` with `%{VAR}%` placeholders for dynamic build-time config

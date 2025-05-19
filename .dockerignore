@@ -13,7 +13,6 @@
 *.swn
 *.swo
 *.swp
-Rocket.toml
 target/
 Thumbs.db
 *.tmp

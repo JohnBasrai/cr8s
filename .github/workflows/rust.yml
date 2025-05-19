@@ -1,4 +1,4 @@
-name: 🧪 Test and Build
+name: cr8s CI
 
 on:
   push:
@@ -12,61 +12,60 @@ permissions:
   packages: write
 
 jobs:
-  check:
-    name: Test and Build cr8s Containers
+  setup:
+    name: 📆 Shared Setup
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_DB: cr8s
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: secret
-        ports:
-          - 5432:5432
-      redis:
-        image: redis:7
-        ports:
-          - 6379:6379
-
-    env:
-      DATABASE_URL:    postgres://postgres:secret@postgres:5432/cr8s
-      CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
-      GITHUB_TOKEN:    ${{ secrets.GITHUB_TOKEN }}
-      CI: true
-
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
     steps:
       - name: ⬇️ Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🛠 Extract version from Cargo.toml
+      - name: 👁️ Inspect version
         id: get_version
-        run: echo "version=$(awk -F'\"' '/^\s*version\s*=/ { print $2 }' Cargo.toml)" >> "$GITHUB_OUTPUT"
-
-      - name: 🚀 Docker build both images (server/cli)
         run: |
-          env scripts/build-images.sh
+          echo "version=$(awk -F '\"' '/^version =/ { print \$2 }' Cargo.toml)" >> "$GITHUB_OUTPUT"
 
-      - name: 🔑 Login to GitHub Container Registry
-        uses: docker/login-action@v3
+      - name: 🚧 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.CR8S_GHCR_PAT }}
+          install: true
+          driver-opts: image=moby/buildkit:latest
+          buildkitd-flags: --debug
+          driver: docker-container
+          name: cr8s-builder
+          use: true
 
-      - name: 📦 Push both images
+      - name: 📁 Setup Docker buildx cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+  lint:
+    name: ✨ Full Lint (fmt, clippy, audit, outdated, deny)
+    runs-on: ubuntu-latest
+    needs: setup
+    env:
+      CI: true
+      CR8S_VERSION: ${{ needs.setup.outputs.version }}
+    steps:
+      - name: 🔧 Run full lint via rust-dev container
         run: |
-          VERSION="${{ steps.get_version.outputs.version }}"
-          echo "VERSION = $VERSION"
-          echo "📦 Pushing cr8s-server:${VERSION} and cr8s-cli:${VERSION}..."
-          docker push ghcr.io/johnbasrai/cr8s/cr8s-server:${VERSION}
-          docker push ghcr.io/johnbasrai/cr8s/cr8s-cli:${VERSION}
+          ./scripts/dev/build-images.sh --full-lint
 
-      #- name: 🧪 Redis smoke test
-      #  run: |
-      # Temporarily disabled due to Docker network resolution issue with Redis
-      #    VERSION="${{ steps.get_version.outputs.version }}"
-      #    echo "VERSION = $VERSION"
-      #    docker run --rm \
-      #      ghcr.io/johnbasrai/cr8s/cr8s-cli:${VERSION} redis ping
+  build:
+    name: 📆 Build & Push Containers
+    runs-on: ubuntu-latest
+    needs: [setup, lint]
+    env:
+      DATABASE_HOST: 127.0.0.1
+      REDIS_HOST: 127.0.0.1
+      CI: true
+      CR8S_VERSION: ${{ needs.setup.outputs.version }}
+    steps:
+      - name: 🚀 Build and push containers
+        run: |
+          ./scripts/dev/build-images.sh --push --diesel-migrations
