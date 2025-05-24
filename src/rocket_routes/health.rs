@@ -1,32 +1,40 @@
-use crate::rocket_routes::CacheConn;
-use redis::cmd;
+// rocket_routes/health.rs
+use crate::domain::HealthTraitPtr;
 use rocket::get;
 use rocket::http::Status;
-use rocket_db_pools::Connection;
+use rocket::State;
 
+// REST /health endpoint
 #[get("/health")]
-pub async fn health(mut redis: Connection<CacheConn>) -> (Status, &'static str) {
+pub async fn health_endpoint(cache: &State<HealthTraitPtr>) -> Status {
     // ---
-    tracing::debug!("🐾 Health check...");
-
-    let result: redis::RedisResult<String> = cmd("PING").query_async(redis.as_mut()).await;
-
-    match result {
-        Ok(_) => (Status::Ok, "OK"),
-        Err(e) => {
-            tracing::warn!("Redis ping failed: {e}");
-            (Status::ServiceUnavailable, "Unavailable")
-        }
+    if cache.inner().health_check().await.is_ok() {
+        Status::Ok
+    } else {
+        Status::ServiceUnavailable
     }
 }
 
-#[get("/ping")]
-pub async fn redis_ping(mut redis: Connection<CacheConn>) -> (Status, String) {
-    match cmd("PING").query_async(redis.as_mut()).await {
-        Ok(resp) => (Status::Ok, resp),
-        Err(e) => {
-            tracing::warn!("Redis ping failed: {e}");
-            (Status::ServiceUnavailable, "Unavailable".into())
-        }
+#[cfg(test)]
+mod tests {
+    // ---
+    use super::*;
+    use anyhow::{ensure, Result};
+    use rocket::http::Status;
+
+    #[tokio::test]
+    async fn test_check_cache_health_ok() -> Result<()> {
+        // ---
+        let result = health_endpoint().await;
+        ensure!(result == Status::Ok);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_check_cache_health_fails() -> Result<()> {
+        // ---
+        let result = health_endpoint().await;
+        ensure!(result, Status::ServiceUnavailable);
+        Ok(())
     }
 }
