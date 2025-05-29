@@ -17,24 +17,49 @@ pub async fn health_endpoint(cache: &State<HealthTraitPtr>) -> Status {
 
 #[cfg(test)]
 mod tests {
-    // ---
     use super::*;
-    use anyhow::{ensure, Result};
-    use rocket::http::Status;
+    use crate::domain::HealthTrait;
+    use anyhow::Result;
+    use async_trait::async_trait;
+    use rocket::State;
+    use std::sync::Arc;
 
-    #[tokio::test]
-    async fn test_check_cache_health_ok() -> Result<()> {
-        // ---
-        let result = health_endpoint().await;
-        ensure!(result == Status::Ok);
-        Ok(())
+    struct MockHealthService {
+        should_fail: bool,
+    }
+
+    impl MockHealthService {
+        fn new(should_fail: bool) -> Self {
+            Self { should_fail }
+        }
+    }
+
+    #[async_trait]
+    impl HealthTrait for MockHealthService {
+        async fn health_check(&self) -> Result<()> {
+            if self.should_fail {
+                anyhow::bail!("Health check failed")
+            } else {
+                Ok(())
+            }
+        }
     }
 
     #[tokio::test]
-    async fn test_check_cache_health_fails() -> Result<()> {
-        // ---
-        let result = health_endpoint().await;
-        ensure!(result, Status::ServiceUnavailable);
-        Ok(())
+    async fn test_check_cache_health_ok() {
+        let health_service: Arc<dyn HealthTrait> = Arc::new(MockHealthService::new(false));
+        let health_state = State::from(&health_service);
+
+        let result = health_endpoint(health_state).await;
+        assert_eq!(result.code, 200); // Status::Ok code
+    }
+
+    #[tokio::test]
+    async fn test_check_cache_health_fails() {
+        let health_service: Arc<dyn HealthTrait> = Arc::new(MockHealthService::new(true));
+        let health_state = State::from(&health_service);
+
+        let result = health_endpoint(health_state).await;
+        assert_eq!(result.code, 503); // Status::ServiceUnavailable code
     }
 }

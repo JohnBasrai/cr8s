@@ -84,12 +84,14 @@ mod tests {
         //
         AppUser as DomainAppUser,
         Crate as CrateModel,
+        CrateSummary,
         CrateTableTrait,
         NewCrate,
     };
     use anyhow::{anyhow, Result};
     use async_trait::async_trait;
     use chrono::Utc;
+    use rocket::State;
     use std::collections::HashMap;
     use std::sync::Arc;
 
@@ -98,6 +100,7 @@ mod tests {
     }
 
     impl MockCrateRepo {
+        // ---
         pub fn new() -> Self {
             Self {
                 crates: HashMap::new(),
@@ -112,11 +115,13 @@ mod tests {
 
     #[async_trait]
     impl CrateTableTrait for MockCrateRepo {
+        // ---
         async fn find_multiple(&self, _limit: i64) -> Result<Vec<CrateModel>> {
             Ok(self.crates.values().cloned().collect())
         }
 
         async fn create(&self, new: NewCrate) -> Result<CrateModel> {
+            // ---
             Ok(CrateModel {
                 id: 999,
                 author_id: new.author_id,
@@ -128,44 +133,90 @@ mod tests {
             })
         }
 
-        async fn update(&self, _id: i32, updated: CrateModel) -> Result<CrateModel> {
-            Ok(updated)
+        async fn update(&self, _id: i32, updated: NewCrate) -> Result<CrateModel> {
+            // ---
+            Ok(CrateModel {
+                id: _id,
+                author_id: updated.author_id,
+                code: updated.code,
+                name: updated.name,
+                version: updated.version,
+                description: updated.description,
+                created_at: Utc::now().naive_utc(),
+            })
         }
 
         async fn delete(&self, _id: i32) -> Result<()> {
+            // ---
             Ok(())
         }
 
-        // Stub unused methods to satisfy trait (if required)
-        async fn find(&self, _id: i32) -> Result<CrateModel> {
-            unimplemented!()
+        async fn find(&self, id: i32) -> Result<CrateModel> {
+            // ---
+            self.crates
+                .get(&id)
+                .cloned()
+                .ok_or_else(|| anyhow!("Crate not found"))
+        }
+
+        async fn find_since(&self, _hours_since: i32) -> Result<Vec<CrateSummary>> {
+            // ---
+            let summaries = self
+                .crates
+                .values()
+                .map(|c| CrateSummary {
+                    name: c.name.clone(),
+                    version: c.version.clone(),
+                })
+                .collect();
+            Ok(summaries)
         }
     }
 
     #[tokio::test]
-    async fn test_get_crates_route_returns_expected_json() -> Result<()> {
+    async fn test_get_crates_route_returns_expected_json() {
         // ---
-        let mock_repo = Arc::new(MockCrateRepo::new().with_crate());
-        let user = DomainAppUser {
+        let test_crate = CrateModel {
+            id: 1,
+            author_id: 1,
+            code: "test_code".into(),
+            name: "test_crate".into(),
+            version: "1.0.0".into(),
+            description: Some("Test description".into()),
+            created_at: Utc::now().naive_utc(),
+        };
+
+        let mock_repo = Arc::new(MockCrateRepo::new().with_crate(test_crate));
+        let binding = mock_repo as Arc<dyn CrateTableTrait>;
+        let repo_state = State::from(&binding);
+        let user = GuardedAppUser(DomainAppUser {
             id: 1,
             username: "test".into(),
-        };
+            password: "password".into(),
+            created_at: Utc::now().naive_utc(),
+        });
 
-        let result = get_crates(mock_repo.into(), user).await?;
-        assert_eq!(result["0"]["name"], "test_crate");
-        Ok(())
+        let result = get_crates(repo_state, user).await;
+        match result {
+            Ok(value) => {
+                assert_eq!(value[0]["name"], "test_crate");
+            }
+            Err(e) => panic!("Expected success but got error: {:?}", e),
+        }
     }
 
-    // ---
-
     #[tokio::test]
-    async fn test_create_crate_success() -> Result<()> {
+    async fn test_create_crate_success() {
         // ---
         let repo = Arc::new(MockCrateRepo::new());
-        let user = DomainAppUser {
+        let binding = repo as Arc<dyn CrateTableTrait>;
+        let repo_state = State::from(&binding);
+        let user = GuardedAppUser(DomainAppUser {
             id: 42,
             username: "alice".into(),
-        };
+            password: "password".into(),
+            created_at: Utc::now().naive_utc(),
+        });
         let new_crate = Json(NewCrate {
             author_id: 42,
             code: "abc".into(),
@@ -174,15 +225,18 @@ mod tests {
             description: Some("desc".into()),
         });
 
-        let result = create_crate(repo.into(), user, new_crate).await?;
-        assert_eq!(result["name"], "test_create");
-        Ok(())
+        let result = create_crate(repo_state, user, new_crate).await;
+        match result {
+            Ok(value) => {
+                assert_eq!(value["name"], "test_create");
+            }
+            Err(e) => panic!("Expected success but got error: {:?}", e),
+        }
     }
 
-    // --
-
     #[tokio::test]
-    async fn test_view_crate_success() -> Result<()> {
+    async fn test_view_crate_success() {
+        // ---
         let test_crate = CrateModel {
             id: 10,
             author_id: 1,
@@ -194,26 +248,36 @@ mod tests {
         };
 
         let repo = Arc::new(MockCrateRepo::new().with_crate(test_crate.clone()));
-        let user = DomainAppUser {
+        let binding = repo as Arc<dyn CrateTableTrait>;
+        let repo_state = State::from(&binding);
+        let user = GuardedAppUser(DomainAppUser {
             id: 1,
             username: "test".into(),
-        };
+            password: "password".into(),
+            created_at: Utc::now().naive_utc(),
+        });
 
-        let result = view_crate(repo.into(), user, 10).await?;
-        assert_eq!(result["name"], "Test Crate");
-        Ok(())
+        let result = view_crate(repo_state, user, 10).await;
+        match result {
+            Ok(value) => {
+                assert_eq!(value["name"], "Test Crate");
+            }
+            Err(e) => panic!("Expected success but got error: {:?}", e),
+        }
     }
 
-    // --
-
     #[tokio::test]
-    async fn test_update_crate_success() -> Result<()> {
+    async fn test_update_crate_success() {
         // ---
         let repo = Arc::new(MockCrateRepo::new());
-        let user = DomainAppUser {
+        let binding = repo as Arc<dyn CrateTableTrait>;
+        let repo_state = State::from(&binding);
+        let user = GuardedAppUser(DomainAppUser {
             id: 1,
             username: "bob".into(),
-        };
+            password: "password".into(),
+            created_at: Utc::now().naive_utc(),
+        });
         let updated = Json(NewCrate {
             author_id: 1,
             code: "upd".into(),
@@ -222,99 +286,76 @@ mod tests {
             description: None,
         });
 
-        let result = update_crate(repo.into(), user, 123, updated).await?;
-        assert_eq!(result["name"], "updated_crate");
-        Ok(())
+        let result = update_crate(repo_state, user, 123, updated).await;
+        match result {
+            Ok(value) => {
+                assert_eq!(value["name"], "updated_crate");
+            }
+            Err(e) => panic!("Expected success but got error: {:?}", e),
+        }
     }
 
-    // ---
-
     #[tokio::test]
-    async fn test_delete_crate_success() -> Result<()> {
+    async fn test_delete_crate_success() {
         // ---
         let repo = Arc::new(MockCrateRepo::new());
-        let user = DomainAppUser {
+        let binding = repo as Arc<dyn CrateTableTrait>;
+        let repo_state = State::from(&binding);
+        let user = GuardedAppUser(DomainAppUser {
             id: 1,
             username: "admin".into(),
-        };
-
-        let result = delete_crate(repo.into(), user, 555).await?;
-        assert_eq!(result["deleted"], true);
-        Ok(())
-    }
-    #[tokio::test]
-    async fn test_update_crate_success() -> Result<()> {
-        let repo = Arc::new(MockCrateRepo::new());
-        let user = GuardedAppUser(crate::domain::AppUser {
-            id: 42,
-            username: "updater".into(),
+            password: "password".into(),
+            created_at: Utc::now().naive_utc(),
         });
 
-        let updated = Json(NewCrate {
-            author_id: 42,
-            code: "updated".into(),
-            name: "Updated Crate".into(),
-            version: "2.0.0".into(),
-            description: Some("Updated description".into()),
-        });
-
-        let result = update_crate(repo.into(), user, 123, updated).await?;
-        assert_eq!(result["name"], "Updated Crate");
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn test_delete_crate_success() -> Result<()> {
-        let repo = Arc::new(MockCrateRepo::new());
-        let user = GuardedAppUser(crate::domain::AppUser {
-            id: 1,
-            username: "deleter".into(),
-        });
-
-        let result = delete_crate(repo.into(), user, 999).await?;
-        assert_eq!(result["deleted"], true);
-        Ok(())
+        let result = delete_crate(repo_state, user, 555).await;
+        match result {
+            Ok(value) => {
+                assert_eq!(value["deleted"], true);
+            }
+            Err(e) => panic!("Expected success but got error: {:?}", e),
+        }
     }
 
     #[tokio::test]
     #[ignore]
     async fn test_create_crate_failure() {
-        // TODO: Simulate backend failure in create()
+        // ---
         todo!("Implement create_crate() failure path");
     }
 
     #[tokio::test]
     #[ignore]
     async fn test_update_crate_failure_invalid_id() {
-        // TODO: Simulate update failure on unknown ID
+        // ---
         todo!("Implement update_crate() failure path for bad ID");
     }
 
     #[tokio::test]
     #[ignore]
     async fn test_delete_crate_failure_known_bad_id() {
-        // TODO: Simulate delete failure for flagged ID
+        // ---
         todo!("Implement delete_crate() failure path");
     }
 
     #[tokio::test]
     #[ignore]
     async fn test_create_crate_validation_failure() {
-        // TODO: Simulate invalid or missing fields in request
+        // ---
         todo!("Implement input validation failure for create_crate()");
     }
 
     #[tokio::test]
     #[ignore]
     async fn test_view_crate_not_found() {
-        // TODO: simulate missing ID in mock and assert Custom(Status::NotFound)
+        // ---
         todo!("Implement error case: crate not found");
     }
 
     #[tokio::test]
     #[ignore]
     async fn test_view_crate_db_error() {
-        // TODO: simulate unexpected backend failure (e.g. connection error)
+        // ---
         todo!("Implement error case: database error");
     }
 }

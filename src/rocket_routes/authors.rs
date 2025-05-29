@@ -94,17 +94,11 @@ pub async fn delete_rustacean(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::{
-        //
-        Author,
-        AuthorTableTrait,
-        AuthorTableTraitPtr,
-        NewAuthor,
-    };
+    use crate::domain::{Author, AuthorTableTrait, NewAuthor};
     use anyhow::Result;
     use async_trait::async_trait;
     use chrono::Utc;
-    use rocket::serde::json::json;
+    use rocket::State;
     use std::collections::HashMap;
     use std::sync::Arc;
 
@@ -141,6 +135,7 @@ mod tests {
         async fn create(&self, new: NewAuthor) -> Result<Author> {
             Ok(Author {
                 id: 42,
+                user_id: new.user_id,
                 name: new.name,
                 email: new.email,
                 created_at: Utc::now().naive_utc(),
@@ -157,114 +152,162 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_get_authors_returns_list() -> Result<()> {
+    async fn test_get_authors_returns_list() {
         let author = Author {
             id: 1,
+            user_id: Some(1),
             name: "Alice".into(),
             email: "alice@example.com".into(),
             created_at: Utc::now().naive_utc(),
         };
 
-        let repo = Arc::new(MockAuthorRepo::new().with_author(author.clone()));
+        let repo: Arc<dyn AuthorTableTrait + Send + Sync> =
+            Arc::new(MockAuthorRepo::new().with_author(author.clone()));
+        let repo_state = State::from(&repo);
         let user = GuardedAppUser(crate::domain::AppUser {
             id: 123,
             username: "tester".into(),
+            password: "password".into(),
+            created_at: Utc::now().naive_utc(),
         });
 
-        let result = get_rustaceans(repo.into(), user).await?;
-        assert_eq!(result[0]["name"], "Alice");
-        Ok(())
+        let result = get_rustaceans(repo_state, user).await;
+        match result {
+            Ok(value) => {
+                assert_eq!(value[0]["name"], "Alice");
+            }
+            Err(e) => panic!("Expected success but got error: {:?}", e),
+        }
     }
 
     #[tokio::test]
-    async fn test_view_author_success() -> Result<()> {
+    async fn test_view_author_success() {
         let author = Author {
             id: 5,
+            user_id: Some(1),
             name: "Bob".into(),
             email: "bob@example.com".into(),
             created_at: Utc::now().naive_utc(),
         };
 
-        let repo = Arc::new(MockAuthorRepo::new().with_author(author.clone()));
+        let repo: Arc<dyn AuthorTableTrait + Send + Sync> =
+            Arc::new(MockAuthorRepo::new().with_author(author.clone()));
+        let repo_state = State::from(&repo);
         let user = GuardedAppUser(crate::domain::AppUser {
             id: 123,
             username: "tester".into(),
+            password: "password".into(),
+            created_at: Utc::now().naive_utc(),
         });
 
-        let result = view_rustacean(repo.into(), 5, user).await?;
-        assert_eq!(result["email"], "bob@example.com");
-        Ok(())
+        let result = view_rustacean(repo_state, 5, user).await;
+        match result {
+            Ok(value) => {
+                assert_eq!(value["email"], "bob@example.com");
+            }
+            Err(e) => panic!("Expected success but got error: {:?}", e),
+        }
     }
 
     #[tokio::test]
-    async fn test_create_author_success() -> Result<()> {
-        let repo = Arc::new(MockAuthorRepo::new());
-        let user = GuardedAppUser(crate::domain::AppUser {
+    async fn test_create_author_success() {
+        let repo: Arc<dyn AuthorTableTrait + Send + Sync> = Arc::new(MockAuthorRepo::new());
+        let repo_state = State::from(&repo);
+        let user = EditorUser(GuardedAppUser(crate::domain::AppUser {
             id: 123,
             username: "tester".into(),
-        });
+            password: "password".into(),
+            created_at: Utc::now().naive_utc(),
+        }));
 
         let new_author = Json(NewAuthor {
+            user_id: Some(123),
             name: "Charlie".into(),
             email: "charlie@example.com".into(),
         });
 
-        let result = create_rustacean(repo.into(), user, new_author).await?;
-        assert_eq!(result["name"], "Charlie");
-        Ok(())
+        let result = create_rustacean(repo_state, new_author, user).await;
+        match result {
+            Ok(custom_response) => {
+                let value = custom_response.1; // Extract the JSON value from Custom<Value>
+                assert_eq!(value["name"], "Charlie");
+            }
+            Err(e) => panic!("Expected success but got error: {:?}", e),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_update_author_success() {
+        let existing = Author {
+            id: 10,
+            user_id: Some(1),
+            name: "Old Name".into(),
+            email: "old@example.com".into(),
+            created_at: Utc::now().naive_utc(),
+        };
+
+        let repo: Arc<dyn AuthorTableTrait + Send + Sync> =
+            Arc::new(MockAuthorRepo::new().with_author(existing));
+        let repo_state = State::from(&repo);
+        let user = EditorUser(GuardedAppUser(crate::domain::AppUser {
+            id: 1,
+            username: "admin".into(),
+            password: "password".into(),
+            created_at: Utc::now().naive_utc(),
+        }));
+
+        let updated = Json(Author {
+            id: 10,
+            user_id: Some(1),
+            name: "Updated Name".into(),
+            email: "updated@example.com".into(),
+            created_at: Utc::now().naive_utc(),
+        });
+
+        let result = update_rustacean(repo_state, 10, updated, user).await;
+
+        match result {
+            Ok(value) => {
+                assert_eq!(value["name"], "Updated Name");
+                assert_eq!(value["email"], "updated@example.com");
+            }
+            Err(e) => panic!("Expected success but got error: {:?}", e),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_delete_author_success() {
+        let author = Author {
+            id: 7,
+            user_id: Some(1),
+            name: "ToDelete".into(),
+            email: "delete@example.com".into(),
+            created_at: Utc::now().naive_utc(),
+        };
+
+        let repo: Arc<dyn AuthorTableTrait + Send + Sync> =
+            Arc::new(MockAuthorRepo::new().with_author(author));
+        let repo_state = State::from(&repo);
+        let user = EditorUser(GuardedAppUser(crate::domain::AppUser {
+            id: 1,
+            username: "admin".into(),
+            password: "password".into(),
+            created_at: Utc::now().naive_utc(),
+        }));
+
+        let result = delete_rustacean(repo_state, 7, user).await;
+        match result {
+            Ok(_no_content) => {
+                // NoContent doesn't have indexable content, so we just check that it succeeded
+                // NoContent == success
+            }
+            Err(e) => panic!("Expected success but got error: {:?}", e),
+        }
     }
 
     #[tokio::test]
     #[ignore]
     async fn test_view_author_not_found() {
         todo!("Handle error case where view_rustacean is called with unknown ID");
-    }
-
-    #[tokio::test]
-    async fn test_update_author_success() -> Result<()> {
-        // ---
-        let existing = Author {
-            id: 10,
-            name: "Old Name".into(),
-            email: "old@example.com".into(),
-            created_at: Utc::now().naive_utc(),
-        };
-
-        let repo = Arc::new(MockAuthorRepo::new().with_author(existing));
-        let user = GuardedAppUser(crate::domain::AppUser {
-            id: 1,
-            username: "admin".into(),
-        });
-
-        let updated = Json(NewAuthor {
-            name: "Updated Name".into(),
-            email: "updated@example.com".into(),
-        });
-
-        let result = update_rustacean(repo.into(), user, 10, updated).await?;
-        assert_eq!(result["name"], "Updated Name");
-        assert_eq!(result["email"], "updated@example.com");
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn test_delete_author_success() -> Result<()> {
-        // ---
-        let author = Author {
-            id: 7,
-            name: "ToDelete".into(),
-            email: "delete@example.com".into(),
-            created_at: Utc::now().naive_utc(),
-        };
-
-        let repo = Arc::new(MockAuthorRepo::new().with_author(author));
-        let user = GuardedAppUser(crate::domain::AppUser {
-            id: 1,
-            username: "admin".into(),
-        });
-
-        let result = delete_rustacean(repo.into(), user, 7).await?;
-        assert_eq!(result["deleted"], true);
-        Ok(())
     }
 }

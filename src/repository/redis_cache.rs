@@ -83,7 +83,7 @@ impl CacheContextTrait for RedisCacheContext {
 
 pub fn create_cache_context() -> CacheContextTraitPtr {
     // ---
-    std::sync::Arc::new(RedisCacheContext::default())
+    std::sync::Arc::new(RedisCacheContext)
 }
 
 /// Attempt to create and verify a Redis connection pool with retry logic.

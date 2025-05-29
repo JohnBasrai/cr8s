@@ -44,7 +44,7 @@ sqlx = { version = "0.8", features = [
 
 [[bin]]
 name = "server"
-path = "src/bin/server/server.rs"
+path = "src/bin/server/main.rs"
 
 [[bin]]
 name = "cli"

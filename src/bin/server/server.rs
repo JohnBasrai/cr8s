@@ -2,10 +2,8 @@
 // Server implementation logic
 
 // Declare the modules we need directly in this file
-mod diagnostics;
-mod server_cli_args;
 
-use crate::diagnostics::{
+use super::diagnostics::{
     //
     find_missing_state_types,
     find_unused_state_types,
@@ -13,7 +11,6 @@ use crate::diagnostics::{
 };
 use crate::server_cli_args::Cli;
 use anyhow::{Context, Result};
-use clap::Parser;
 
 // ---
 
@@ -107,7 +104,7 @@ fn init_tracing() {
 
 fn parse_and_handle_args(rocket: &Rocket) -> Result<bool, anyhow::Error> {
     // ---
-
+    use clap::Parser;
     let cli = Cli::parse();
 
     if cli.check || cli.dump_state_traits || cli.output.is_some() {
