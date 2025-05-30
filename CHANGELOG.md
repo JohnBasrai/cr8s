@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## \[Unreleased]
 ---
+## [v0.4.0] – 2025-05-29
+
+### Added
+- Domain trait abstractions for repository pattern implementation (#22)
+- Comprehensive binary test coverage: 27 tests total (19 CLI + 8 server)
+- RedisCacheContext trait with async Redis operations and connection retry logic
+- Server binary diagnostic functions for Rocket route/state analysis
+- CLI support for --help without requiring DATABASE_URL environment variable
+- Unified HealthTrait abstraction for /health endpoint
+- EMBP (Explicit Module Boundary Pattern) applied where possible, more
+  work remains
+
+### Changed
+- **BREAKING**: Complete migration from Diesel to SQLx with trait-based repositories
+- Refactored CLI binary to use domain traits instead of direct database calls
+- Restructured server binary: main.rs (entry point) + server.rs (implementation)
+- Improved error handling with anyhow::Result throughout CLI and server binaries
+- Enhanced user feedback with emoji status indicators and descriptive error messages
+- Updated module structure using standard Rust patterns instead of EMBP for binaries
+
+### Fixed
+- Module import resolution issues in server binary ("too many leading super keywords")
+- CLI argument parsing for negative user IDs with allow_hyphen_values
+- Redis pool accessor functions for health check services
+- Database connection dependency in CLI help commands
+
+### Removed
+- Direct Diesel database dependencies in CLI commands
+- Legacy Redis-specific health check implementation
+- init_default_roles seeding logic (replaced with "not supported" error for compatibility)
+
+### Technical Debt
+- Prepared foundation for MockUserRepo and MockCacheContext implementation
+- Ready for database-free testing as outlined in GitHub issue #22
+
+---
 
 ## [v0.3.1] – 2025-05-17
 ### Added

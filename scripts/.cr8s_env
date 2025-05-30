@@ -1,5 +1,4 @@
 
 export CR8S_USER_TAG="$(id -u):$(id -g)"
-export CARGO_HOME="/tmp/cargo"
 export DATABASE_URL="postgres://postgres:secret@cr8s-postgres-1:5432/cr8s"
 export CONTAINER_TAG="${CONTAINER_TAG:=${USER}}"
