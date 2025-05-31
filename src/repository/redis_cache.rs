@@ -89,53 +89,47 @@ pub fn create_cache_context() -> CacheContextTraitPtr {
 /// Attempt to create and verify a Redis connection pool with retry logic.
 pub async fn init_redis_cache_with_retry_from_env() -> Result<()> {
     // ---
+
     let redis_url = get_env_with_default!(String, "REDIS_URL", "redis://127.0.0.1/".to_owned());
-    let retry_max = get_env_with_default!(u32, "CR8S_REDIS_RETRY_COUNT", 50);
-    let delay_secs = get_env_with_default!(u64, "CR8S_REDIS_RETRY_DELAY_SECS", 1);
-    let delay_secs = Duration::from_secs(delay_secs);
+    let retry_max = get_env_with_default!(u32, "CR8S_REDIS_RETRY_COUNT", 20); // Reduced from 50
+    let base_delay_secs = get_env_with_default!(u64, "CR8S_REDIS_RETRY_DELAY_SECS", 2); // Increased from 1
 
-    // Don't use this direct access method after calling this function once. Use
-    // `get_redis_connection()` instead. We are using it here with reverse polarity,
-    // i.e. existing pool being the error case here.
-    //
-    if let Some(_pool) = REDIS_POOL.get() {
-        // --
-        tracing::error!("🚨 init_redis_cache_with_retry_from_env:: called again incorrectly");
-        return Err(anyhow!("Redis pool already initialized"));
-    }
-
-    tracing::info!("🚨 Attaching to redis at: {redis_url:?}");
+    tracing::info!("🚨 About to start Redis retry loop with {retry_max} attempts, url:{redis_url}");
 
     for attempt in 1..=retry_max {
         // ---
+        tracing::info!("🔄 Redis attempt {attempt}/{retry_max} starting...");
 
         match try_create_redis_pool(&redis_url) {
-            // ---
             Ok(pool) => {
+                tracing::info!("✅ Redis pool created, verifying:{}...", redis_url);
                 if verify_redis_pool(&pool).await.is_ok() {
-                    // ---
-                    // Handle the race conditional if this method is called
-                    // concurrently by two threads.  Main is not supposed to do this
-                    // but we need to protect against it anyway.
+                    // Store the verified pool for use by the rest of the application
                     REDIS_POOL
                         .set(pool)
-                        .map_err(|_| anyhow!("Redis pool already initialized"))?;
-                    return Ok(());
+                        .map_err(|_| anyhow!("Failed to set Redis pool - already initialized"))?;
+
+                    tracing::info!("✅ Redis pool initialized and verified successfully");
+                    return Ok(()); // Success! Exit the retry loop
                 }
             }
-            Err(e) if attempt == retry_max => {
-                return Err(anyhow!(
-                    "Failed to create Redis pool after {retry_max} retries: {e}"
-                ));
+            Err(e) => {
+                tracing::warn!("❌ Redis pool creation failed: {e}");
+                // ... retry logic
             }
-            Err(_) => {}
         }
+
+        // Calculate exponential backoff with cap (like your database code)
+        let backoff_secs =
+            Duration::from_secs(std::cmp::min(base_delay_secs * 2_u64.pow(attempt - 1), 16));
 
         tracing::warn!(
             "Redis not ready (attempt {attempt}/{retry_max}) — retrying in {}s...",
-            delay_secs.as_secs()
+            backoff_secs.as_secs()
         );
-        sleep(delay_secs).await;
+
+        // After the warning message, add:
+        sleep(backoff_secs).await;
     }
 
     Err(anyhow!("Exhausted retries but Redis is not available"))
@@ -178,16 +172,23 @@ fn try_create_redis_pool(redis_url: &str) -> Result<Pool> {
 /// Basic connection check: get/set/delete a dummy redis key.
 #[allow(clippy::let_unit_value)]
 async fn verify_redis_pool(pool: &Pool) -> Result<()> {
-    // ---
     let mut conn = pool
         .get()
         .await
-        .context("verify_redis_pool: failed to get Redis connection")?;
+        .context("verify_redis_pool: failed to get Redis connection [2]")?;
 
     let token = "__cr8s_redis_ping";
 
-    // Try to set the key
-    conn.set(token, "ok")
+    // Try to set the key - add explicit type annotation
+    conn.set::<_, _, ()>(token, "ok")
         .await
-        .context("verify_redis_pool: failed to SET test key")
+        .context("verify_redis_pool: failed to SET test key")?;
+
+    // Clean up and return success
+    let _: () = conn
+        .del(token)
+        .await
+        .context("verify_redis_pool: failed to DELETE test key")?;
+
+    Ok(())
 }

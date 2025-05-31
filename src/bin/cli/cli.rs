@@ -1,7 +1,7 @@
 // src/bin/cli/cli.rs
 // CLI argument parsing and structure definitions
 
-use clap::{Parser, Subcommand, ValueEnum};
+use clap::{Parser, Subcommand};
 use cr8s::domain::RoleCode;
 
 // ---
@@ -34,7 +34,7 @@ pub enum Commands {
         #[arg(short, long)]
         password: String,
 
-        /// Roles to assign (admin, editor, viewer)
+        /// Roles to assign (Admin, Editor, Viewer - case insensitive)
         #[arg(short, long, value_delimiter = ',')]
         roles: Vec<CliRoleCode>,
     },
@@ -79,26 +79,46 @@ pub enum Commands {
 // ---
 
 // Clap-compatible wrapper for RoleCode (domain type can't have clap derives)
-#[derive(Clone, Debug, PartialEq, Eq, ValueEnum)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CliRoleCode {
-    // ---
     Admin,
     Editor,
     Viewer,
 }
 
-// ---
-
+// Add this implementation back
 impl From<CliRoleCode> for RoleCode {
-    // ---
-
     fn from(cli_role: CliRoleCode) -> Self {
-        // ---
-
         match cli_role {
             CliRoleCode::Admin => RoleCode::Admin,
             CliRoleCode::Editor => RoleCode::Editor,
             CliRoleCode::Viewer => RoleCode::Viewer,
+        }
+    }
+}
+
+impl std::str::FromStr for CliRoleCode {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "admin" => Ok(CliRoleCode::Admin),
+            "editor" => Ok(CliRoleCode::Editor),
+            "viewer" => Ok(CliRoleCode::Viewer),
+            _ => Err(format!(
+                "Invalid role: '{}'. Valid roles: Admin, Editor, Viewer (case-insensitive)",
+                s
+            )),
+        }
+    }
+}
+
+impl std::fmt::Display for CliRoleCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CliRoleCode::Admin => write!(f, "Admin"),
+            CliRoleCode::Editor => write!(f, "Editor"),
+            CliRoleCode::Viewer => write!(f, "Viewer"),
         }
     }
 }

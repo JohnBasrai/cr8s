@@ -24,7 +24,7 @@ services:
       retries: 5
 
   server:
-    image: ghcr.io/johnbasrai/cr8s/cr8s-server:v0.3.1
+    image: ghcr.io/johnbasrai/cr8s/cr8s-server:0.4.0
     depends_on:
       postgres:
         condition: service_healthy
@@ -33,6 +33,8 @@ services:
     environment:
       ROCKET_PROFILE: default
       DATABASE_URL: postgres://postgres:secret@postgres:5432/cr8s
+      REDIS_URL: redis://redis:6379/
+      RUST_BACKTRACE: 1
     ports:
       - "8000:8000"
 
@@ -41,3 +43,16 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  cli:
+    image: ghcr.io/johnbasrai/cr8s/cr8s-cli:0.4.0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:secret@postgres:5432/cr8s
+      REDIS_URL: redis://redis:6379/
+    profiles:
+      - tools  # Optional: only start when explicitly requested
