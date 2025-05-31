@@ -5,6 +5,7 @@ VERBOSE=${1:-false}  # Pass --verbose as first arg
 if [[ "$VERBOSE" == "--verbose" ]]; then
     set -x
 fi
+: ${VERSION:?is required}
 
 echo "🔥 Running cr8s smoke test..."
 echo "Testing that the system boots and core functionality works"

@@ -24,7 +24,8 @@ services:
       retries: 5
 
   server:
-    image: ghcr.io/johnbasrai/cr8s/cr8s-server:0.4.0
+    image: ghcr.io/johnbasrai/cr8s/cr8s-server:${VERSION}
+    pull_policy: never
     depends_on:
       postgres:
         condition: service_healthy
@@ -37,7 +38,6 @@ services:
       RUST_BACKTRACE: 1
     ports:
       - "8000:8000"
-
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
       interval: 10s
@@ -45,7 +45,8 @@ services:
       retries: 5
 
   cli:
-    image: ghcr.io/johnbasrai/cr8s/cr8s-cli:0.4.0
+    image: ghcr.io/johnbasrai/cr8s/cr8s-cli:${VERSION}
+    pull_policy: never
     depends_on:
       postgres:
         condition: service_healthy

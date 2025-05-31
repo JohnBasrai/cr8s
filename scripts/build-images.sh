@@ -9,7 +9,8 @@ else
 fi
 
 # Get version from Cargo.toml
-VERSION=$(awk -F'"' '/^\s*version\s*=/ { print $2 ; exit 0 }' Cargo.toml)
+export VERSION=$(awk -F'"' '/^\s*version\s*=/ { print $2 ; exit 0 }' Cargo.toml)
+echo $VERSION > VERSION
 echo "🔨 Building cr8s-server and cr8s-cli images (version: ${VERSION})"
 
 if [ -z "${VERSION}" ]; then

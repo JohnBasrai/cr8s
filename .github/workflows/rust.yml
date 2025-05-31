@@ -33,6 +33,8 @@ jobs:
         run: echo "version=$(cat VERSION)" >> "$GITHUB_OUTPUT"
 
       - name: 🔍 Run build verification tests
+        env:
+          VERSION: ${{ steps.get_version.outputs.version }}
         run: ./scripts/build-verification-test.sh
 
       - name: 🔑 Login to GitHub Container Registry
