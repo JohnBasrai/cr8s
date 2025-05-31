@@ -45,10 +45,23 @@ jobs:
           password: ${{ secrets.CR8S_GHCR_PAT }}
 
       - name: 📦 Push both images
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           VERSION="${{ steps.get_version.outputs.version }}"
           echo "VERSION = $VERSION"
-          echo "📦 Pushing cr8s-server:${VERSION} and cr8s-cli:${VERSION}..."
-          docker push ghcr.io/johnbasrai/cr8s/cr8s-server:${VERSION}
-          docker push ghcr.io/johnbasrai/cr8s/cr8s-cli:${VERSION}
+
+          # List local images first
+          docker images | grep cr8s
+
+          echo "📦 Pushing cr8s-server:${VERSION}..."
+          docker push ghcr.io/johnbasrai/cr8s/cr8s-server:${VERSION} || { echo "Server push failed"; exit 1; }
+          if [ $? -ne 0 ]; then
+            echo "Push failed!"
+            exit 1
+          fi
+
+          echo "📦 Pushing cr8s-cli:${VERSION}..."
+          docker push ghcr.io/johnbasrai/cr8s/cr8s-cli:${VERSION} || { echo "CLI push failed"; exit 1; }
+          if [ $? -ne 0 ]; then
+            echo "Push failed!"
+            exit 1
+          fi
