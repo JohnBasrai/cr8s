@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## \[Unreleased]
 ---
+## [v0.4.1] – 2025-05-30
+
+### Changed
+- Updated architecture documentation to reflect SQLx migration
+- Added EMBP (Explicit Module Boundary Pattern) to architectural models
+- Corrected repository layer documentation from Diesel to SQLx references
+- Enhanced separation of concerns section with detailed module responsibilities
+
 ## [v0.4.0] – 2025-05-29
 
 ### Added

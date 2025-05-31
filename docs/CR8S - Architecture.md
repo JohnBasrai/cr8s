@@ -16,17 +16,21 @@ These are equivalent to abstract base classes in OOP languages like C++ or Java.
 
 ### 2. Dependency Inversion Principle (DIP)
 High-level modules (services, commands) depend on traits defined in `src/domain/`, not on concrete implementations. This allows:
-- Easy swapping of implementations (e.g., Diesel vs. in-memory)
+- Easy swapping of implementations (e.g., SQLx to in-memory)
 - Fully mockable testing
 - Clear separation between domain logic and infrastructure
 
 ### 3. Clean Architecture / Hexagonal Architecture
+
 Each layer has one clear responsibility:
-- `domain/`: core interfaces and shared data types
-- `repository/`: Diesel-backed implementations
-- `mock/`: test-only, in-memory mocks
-- `service/`: business logic orchestration
-- `auth/`, `mail/`: side-effecting adapters and helpers
+
+| Module           | Responsibility                         |
+|----------------- | -------------------------------------- |
+| `domain/`        | core interfaces and shared data types  |
+| `repository/`    | SQLx-backed implementations            |
+| `mock/`          | test-only, in-memory mocks             |
+| `service/`       | business logic orchestration           |
+| `auth/`, `mail/` | side-effecting adapters and helpers    |
 
 ### 4. SOLID Principles in Practice
 - **S**ingle Responsibility: Each module has a focused purpose
@@ -36,20 +40,37 @@ Each layer has one clear responsibility:
 - **D**ependency Inversion: Central organizing idea
 
 ### 5. Separation of Concerns
+
+The repository layer demonstrates clear separation of concerns through focused, single-responsibility modules:
+
+| File                     | Purpose                                    |
+|-------------------------|-------------------------------------------- |
+| `app_user_sqlx.rs`      | User authentication and account management  |
+| `author_sqlx.rs`        | Rust community author/contributor data      |
+| `crate_sqlx.rs`         | Rust crate/package metadata                 |
+| `role_code_sqlx.rs`     | Permission and role-based access control    |
+| `database.rs`           | Database connection and lifecycle management |
+| `redis_cache.rs`        | Session and ephemeral data caching          |
+| `env.rs`                | Environment configuration management        |
+| `health_check.rs`       | System diagnostics and monitoring           |
+| `role_code_mapping.rs`  | Static role definitions and mappings        |
+| `mod.rs`                | Public API and trait re-exports             |
+
+This modular design ensures that:
 - CLI, HTTP, database, and auth layers are decoupled
+- Each concern is isolated to its own module
 - Modules expose traits and inject dependencies — not global state
+- Infrastructure details remain hidden behind domain interfaces
 
 ### 6. Repository Layer
 
-Core Diesel-backed types (e.g. `AppUser`, `UserRole`) are defined in `repository/diesel.rs` and selectively re-exported through `repository/mod.rs` for use in CLI, service, or test layers.
-
-Trait implementations are housed in `repository/diesel.rs`, while orchestration and helper logic lives in `repository/provider.rs`. A central `mod.rs` re-exports the public API.
+Core SQLx-backed types (e.g. `AppUser`, `UserRole`, etc.) are defined in `src/repository/*_sqlx.rs` files, each focused on a specific domain entity.
 
 A new domain-facing abstraction, `DBContextTrait`, was introduced to encapsulate all database lifecycle logic.
 
 This trait has no public methods yet — it simply acts as an opaque handle to a lazily-initialized global database context. It is returned via `initialize_database()` and accessed via `get_database()`.
 
-All state (connection pool, etc.) is hidden behind `Box<dyn DBContextTrait>`, and the implementation lives entirely in `repository/database.rs`. This ensures that both `cli.rs` and `server.rs` can initialize and access the database without being coupled to Diesel or Rocket internals.
+All state (connection pool, etc.) is hidden behind `Box<dyn DBContextTrait>`, and the implementation lives entirely in `repository/database.rs`. This ensures that both `cli.rs` and `server.rs` can initialize and access the database without being coupled to SQLx or Rocket internals.
 
 ### 🧾 Route-to-Trait Dependency Matrix
 
@@ -75,17 +96,24 @@ All state (connection pool, etc.) is hidden behind `Box<dyn DBContextTrait>`, an
 
 ```
 src/repository/
-├── diesel.rs          # Diesel-backed data models and trait impls
-├── provider.rs        # Higher-level repository orchestration
-└── mod.rs             # Central API exposing public repository symbols
+├── app_user_sqlx.rs       # User authentication SQLx implementation
+├── author_sqlx.rs         # Author/contributor SQLx implementation  
+├── crate_sqlx.rs          # Crate metadata SQLx implementation
+├── role_code_sqlx.rs      # Role-based access control SQLx implementation
+├── database.rs            # Database connection and lifecycle management
+├── redis_cache.rs         # Redis caching implementation
+├── env.rs                 # Environment configuration
+├── health_check.rs        # System diagnostics
+├── role_code_mapping.rs   # Static role definitions
+└── mod.rs                 # Central API exposing public repository symbols
 ```
 
 This modular structure allows the repository layer to grow while preserving a stable public interface through `mod.rs`.
-The `ServerInfoTrait` provides a clean abstraction for querying diagnostics like server IP. Its Diesel-based implementation uses raw SQL for operations not covered by Diesel’s query builder.
+The `ServerInfoTrait` provides a clean abstraction for querying diagnostics like server IP. Its SQLx-based implementation uses raw SQL for operations not covered by SQLx's query builder.
 
 This layering ensures:
-- Diesel remains encapsulated and swappable
-- Domain code never depends directly on schema or ORM details
+- SQLx remains encapsulated and swappable
+- Domain code never depends directly on database schemas or ORM details
 - Repository logic is testable with in-memory or mock trait impls
 
 ---
@@ -98,8 +126,11 @@ This layering ensures:
 | Domain-Driven Design (lite)  | ✅ Yes  | Domain traits express business capabilities |
 | Service-Oriented Design      | ✅ Yes  | Coordinated modules like `user.rs`, `digest.rs` |
 | Onion/Clean/Layered Arch     | ✅ Yes  | Core-to-edges dependency flow |
+| EMBP*                        | ✅ Yes  | **Boundary**: Gateway files (`mod.rs`) control public APIs, **Entity**: Domain types in focused modules, **Provider**: SQLx implementations behind trait boundaries |
 | CQRS / Event Sourcing        | ⚠️ Partial | Could be layered on later |
 | Actor-based async systems    | ⚠️ Not yet | Future candidate for service messaging |
+
+> EMBP = Explicit Module Boundary Pattern
 
 ---
 
