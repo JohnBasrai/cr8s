@@ -3,14 +3,24 @@
 
 // Declare the modules we need directly in this file
 
-use super::diagnostics::{
+use super::{
     //
     find_missing_state_types,
     find_unused_state_types,
     generate_route_state_markdown,
 };
-use crate::server_cli_args::Cli;
+use crate::Cli;
 use anyhow::{Context, Result};
+
+macro_rules! init_servcies {
+    () => {{
+        tokio::try_join!(
+            cr8s::domain::init_database_with_retry_from_env(),
+            cr8s::domain::init_cache_with_retry_from_env()
+        )
+        .with_context(|| "Startup failed: check Redis/Postgres connection")
+    }};
+}
 
 // ---
 
@@ -19,8 +29,7 @@ type Rocket = rocket::Rocket<rocket::Build>;
 // ---
 
 pub async fn run() -> Result<(), anyhow::Error> {
-    // ---
-
+    // --
     init_tracing();
 
     tracing::info!("✅ backend starting...");
@@ -28,29 +37,61 @@ pub async fn run() -> Result<(), anyhow::Error> {
 
     let start = std::time::Instant::now();
 
-    // ---
+    // Parse CLI args early to handle --help without database
+    use clap::Parser;
+    let cli = Cli::parse();
 
-    let rocket = build_rocket()?;
+    // Check if this is just a CLI help/version request (no database needed)
+    if cli.check || cli.dump_state_traits || cli.output.is_some() {
+        // --
+        // For inspection features, initialize database first
+        init_servcies!()?;
 
-    if parse_and_handle_args(&rocket)? {
-        return Ok(());
+        // Build rocket with database available
+        let rocket = build_rocket()?;
+
+        // Process the inspection flags and exit
+        if handle_inspection_args(&cli, &rocket)? {
+            return Ok(());
+        }
+    } else {
+        // Normal server startup - ALWAYS needs database before building rocket
+        init_servcies!()?;
+
+        // Build rocket with database available
+        let rocket = build_rocket()?;
+
+        check_unused_managed_state(&rocket);
+
+        tracing::info!("Startup completed in {:?}", start.elapsed());
+        rocket.launch().await?;
     }
 
-    check_unused_managed_state(&rocket);
-
-    // ---
-
-    tokio::try_join!(
-        cr8s::domain::init_database_with_retry_from_env(),
-        cr8s::domain::init_cache_with_retry_from_env()
-    )
-    .with_context(|| "Startup failed: check Redis/Postgres connection")?;
-
-    // ---
-
-    tracing::info!("Startup completed in {:?}", start.elapsed());
-    rocket.launch().await?;
     Ok(())
+}
+
+/// Handle CLI arguments that require route inspection (need full rocket with database)
+fn handle_inspection_args(cli: &Cli, rocket: &Rocket) -> Result<bool, anyhow::Error> {
+    // ---
+    if cli.check || cli.dump_state_traits || cli.output.is_some() {
+        // ---
+        let table = generate_route_state_markdown(rocket)?;
+
+        if cli.dump_state_traits {
+            println!("{}", table);
+        } else if let Some(path) = &cli.output {
+            std::fs::write(path, table)?;
+            println!("✅ Route-trait table written to {}", path.display());
+        }
+
+        if cli.check {
+            check_and_dump_statistics(rocket);
+        }
+
+        return Ok(true);
+    }
+
+    Ok(false)
 }
 
 // ---
@@ -102,37 +143,7 @@ fn init_tracing() {
 
 // ---
 
-fn parse_and_handle_args(rocket: &Rocket) -> Result<bool, anyhow::Error> {
-    // ---
-    use clap::Parser;
-    let cli = Cli::parse();
-
-    if cli.check || cli.dump_state_traits || cli.output.is_some() {
-        // ---
-
-        let table = generate_route_state_markdown(rocket)?;
-
-        if cli.dump_state_traits {
-            println!("{}", table);
-        } else if let Some(path) = cli.output {
-            // ---
-
-            std::fs::write(&path, table)?;
-            println!("✅ Route-trait table written to {}", path.display());
-        }
-
-        if cli.check {
-            check_and_dump_statistics(rocket);
-        }
-
-        return Ok(true);
-    }
-
-    Ok(false)
-}
-
-// ---
-
+/// Check for unused/missing managed state types and log warnings/errors
 fn check_unused_managed_state(rocket: &Rocket) {
     // ---
 
@@ -151,6 +162,7 @@ fn check_unused_managed_state(rocket: &Rocket) {
 
 // ---
 
+/// Analyze state management and print statistics (exits with error if issues found)
 fn check_and_dump_statistics(rocket: &Rocket) {
     // ---
 

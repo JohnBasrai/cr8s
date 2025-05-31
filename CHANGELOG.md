@@ -7,15 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## \[Unreleased]
 ---
-## [v0.4.1] – 2025-05-30
+## [v0.4.2] – 2025-05-31
+
+### Added
+- **Documentation**: Container Usage Guide for deployment and development workflows
+- **Documentation**: Development guide (development.md) with setup and contribution instructions
+- **Security**: cargo audit integration with documented RUSTSEC-2023-0071 exception (MySQL RSA vulnerability not applicable to PostgreSQL/Redis stack)
+- **CI/Development**: build-verification-test.sh script for automated testing in CI and local development
 
 ### Changed
-- Updated architecture documentation to reflect SQLx migration
-- Added EMBP (Explicit Module Boundary Pattern) to architectural models
-- Corrected repository layer documentation from Diesel to SQLx references
-- Enhanced separation of concerns section with detailed module responsibilities
+- **Docker Build Optimization**: Dramatically improved build cache performance by separating dependency and source file copying, reducing incremental build times from minutes to seconds when only source code changes
+- **Dockerfile Structure**: Reorganized build layers for optimal caching - dependency fetching now only runs when Cargo.toml/Cargo.lock change
+- **Project Organization**: Archived legacy scripts to archive/ directory (no longer in use)
+- **Code Quality**: Fixed multiple EMBP (Explicit Module Boundary Pattern) violations for better module organization
 
-## [v0.4.0] – 2025-05-29
+### Fixed
+- **Database**: Resolved SQLx database logic issues
+- **Server**: Fixed server startup issues and improved reliability  
+- **CLI**: Multiple bug fixes and stability improvements
+- **Build Performance**: Eliminated redundant Docker file copies and improved layer ordering
+
+## [v0.4.1] – 2025-05-29
 
 ### Added
 - Domain trait abstractions for repository pattern implementation (#22)
@@ -28,6 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   work remains
 
 ### Changed
+- Added EMBP (Explicit Module Boundary Pattern) to architectural models
+- Updated architecture documentation to reflect SQLx migration
+- Corrected repository layer documentation from Diesel to SQLx references
+- Enhanced separation of concerns section with detailed module responsibilities
 - **BREAKING**: Complete migration from Diesel to SQLx with trait-based repositories
 - Refactored CLI binary to use domain traits instead of direct database calls
 - Restructured server binary: main.rs (entry point) + server.rs (implementation)

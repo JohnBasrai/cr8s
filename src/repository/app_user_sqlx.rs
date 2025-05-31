@@ -67,11 +67,11 @@ impl AppUserTableTrait for AppUserRepo {
             sqlx::query(
                 r#"
                 INSERT INTO user_roles (user_id, role_id)
-                SELECT $1, id FROM role WHERE code = $2
+                SELECT $1, id FROM role WHERE code = $2::"RoleCodeMapping"
                 "#,
             )
             .bind(rec.id)
-            .bind(RoleCodeMapping::from(*code))
+            .bind(code.to_string())
             .execute(&mut *tx)
             .await
             .with_context(|| format!("Failed to assign role: {code:?}"))?;
@@ -185,7 +185,7 @@ impl AppUserTableTrait for AppUserRepo {
               u.username,
               u.password,
               u.created_at,
-              r.code as "code: RoleCodeMapping"
+              r.code as code
             FROM app_user u
             LEFT JOIN user_roles ur ON u.id = ur.user_id
             LEFT JOIN role r ON r.id = ur.role_id

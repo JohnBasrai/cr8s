@@ -1,7 +1,7 @@
 [package]
 name = "cr8s"
 default-run = "server"
-version = "0.4.1"
+version = "0.4.2"
 edition = "2021"
 authors = ["John Basrai <john@basrai.dev>"]
 description = "Backend service for the cr8s project (Rocket + SQLx + Redis)"
@@ -33,14 +33,11 @@ rocket_db_pools  = { version = "=0.2.0", features = ["deadpool_redis"] }
 redis            = { version = "=0.25.4", default-features = false, features = ["aio"] }
 ##
 
-# ✅ New SQLx dependencies
-sqlx = { version = "0.8", features = [
-    "runtime-tokio-rustls",
-    "postgres",
-    "macros",
-    "uuid",
-    "chrono"
-] }
+# SQLx - postgres-only configuration  
+[dependencies.sqlx]
+version = "0.8"
+features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "macros"]
+default-features = false  # This is the key - excludes MySQL, SQLite, etc.
 
 [[bin]]
 name = "server"
