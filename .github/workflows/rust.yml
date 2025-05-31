@@ -1,41 +1,41 @@
-name: 🧪 Test cr8s Code
-
+name: 🧪 Test and Build
 on:
- push:
-   branches: [ main ]
- pull_request:
-   branches: [ main ]
- workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
 
 permissions:
- contents: read
+  contents: read
+  packages: write
 
 jobs:
- test:
-   name: Test cr8s Code
-   runs-on: ubuntu-latest
-
-   steps:
-     - name: ⬇️ Checkout repository
-       uses: actions/checkout@v4
-
-     - name: 🛠️ Setup Rust
-       uses: actions-rust-lang/setup-rust-toolchain@v1
-       with:
-         components: rustfmt, clippy
-
-     - name: 📋 Format check
-       run: cargo fmt --check
-
-     - name: 🔍 Lint check
-       run: cargo clippy --release --all-targets --all-features -- -D warnings
-
-     - name: 🔒 Security audit
-       run: cargo audit || cargo outdated || true
-
-     - name: 🧪 Run tests
-       run: cargo test --release --all-targets --all-features
-
-     - name: 🛠️ Build binaries
-       run: cargo build --release --bin server --bin cli
-
+  check:
+    name: Test and Build cr8s Containers
+    runs-on: ubuntu-latest
+    env:
+      CI: true
+    steps:
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@v4
+      - name: 🛠 Extract version from Cargo.toml
+        id: get_version
+        run: echo "version=$(awk -F'\"' '/^\s*version\s*=/ { print $2 }' Cargo.toml)" >> "$GITHUB_OUTPUT"
+      - name: 🚀 Docker build both images (server/cli)
+        run: |
+          env scripts/build-images.sh
+      - name: 🔑 Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.CR8S_GHCR_PAT }}
+      - name: 📦 Push both images
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          echo "VERSION = $VERSION"
+          echo "📦 Pushing cr8s-server:${VERSION} and cr8s-cli:${VERSION}..."
+          docker push ghcr.io/johnbasrai/cr8s/cr8s-server:${VERSION}
+          docker push ghcr.io/johnbasrai/cr8s/cr8s-cli:${VERSION}

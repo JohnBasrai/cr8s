@@ -9,7 +9,7 @@ Sample full‑stack **Rust** web service demonstrating clean architecture, trait
 | Layer | Tech | Purpose |
 |-------|------|---------|
 | HTTP  | **Rocket 0.5** | Async web framework |
-| DB    | **SQLx** + **PostgreSQL** | Async SQL with compile-time verification |
+| DB    | **SQLx** + **PostgreSQL** | Async SQL with runtime verification |
 | Cache | **Redis** | Session / ephemeral storage |
 | Admin | CLI binary (`cargo run --bin cli`) | User management with trait-based architecture |
 | Tests | `tokio`, `reqwest`, `sqlx` | Async/await integration tests with role-based auth |
