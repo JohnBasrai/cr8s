@@ -39,7 +39,7 @@ ENTRYPOINT ["./server"]
 ########################
 # 🛠 CLI image
 ########################
-FROM ghcr.io/johnbasrai/cr8s/rust-runtime:0.3.1 AS runtime-cli
+FROM ghcr.io/johnbasrai/cr8s/rust-runtime:0.1.3 AS runtime-cli
 RUN /bin/sh -c 'echo "🔨 Building runtime CLI container" >&2'
 WORKDIR /app
 COPY --from=builder /app/target/release/cli /app/cli
