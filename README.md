@@ -80,6 +80,15 @@ cr8s/
 
 ---
 
+## Development
+
+See [docs/development.md](docs/development.md) for detailed information about:
+- CLI argument testing (with/without database)
+- Route state analysis
+- Local development setup
+
+---
+
 ## 🧪 Continuous Integration
 
 GitHub Actions runs the CI pipeline inside the `cr8s-dev` container, ensuring full parity with local development.
