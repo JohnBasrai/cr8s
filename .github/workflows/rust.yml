@@ -27,10 +27,19 @@ jobs:
       - name: 🚀 Docker build both images (server/cli)
         run: |
           env scripts/build-images.sh
-
       - name: 🛠 Extract version from VERSION file
         id: get_version
-        run: echo "version=$(cat VERSION)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "DEBUG: Current directory: $(pwd)"
+          echo "DEBUG: Files in directory: $(ls -la)"
+          if [ -f VERSION ]; then
+            VERSION=$(cat VERSION)
+            echo "DEBUG: VERSION file exists, contains: '$VERSION'"
+          else
+            echo "DEBUG: VERSION file does not exist!"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: 🔍 Run build verification tests
         env:
