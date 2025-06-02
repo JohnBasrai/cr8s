@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## \[Unreleased]
 ---
+
+## [0.4.3] - 2025-06-02
+
+### Fixed
+- **Database Schema**: Removed incorrect `user_id` column references from author table operations
+- **API Endpoints**: Fixed 500 Internal Server Error on `/rustaceans` endpoint
+- **Repository Layer**: Corrected `AuthorRepo` SQL queries to match actual database schema
+- **Domain Model**: Aligned author domain model with intended one-way relationship design (`app_user.author_id` → `author.id`)
+
+### Technical Details
+- Removed `user_id` field from `AuthorRow` struct and all related SQL queries
+- Fixed `find_multiple`, `find`, `create`, `update` methods in `AuthorTableTrait` implementation
+- Maintained correct schema design where authors can exist independently of user accounts
+- Eliminated circular reference between `app_user` and `author` tables
+
+---
+
 ## [v0.4.2] – 2025-05-31
 
 ### Added
