@@ -45,7 +45,7 @@ impl AuthorTableTrait for AuthorRepo {
             r#"
             INSERT INTO author (name, email)
             VALUES ($1, $2)
-            RETURNING id, name, email, user_id, created_at
+            RETURNING id, name, email, created_at
             "#,
         )
         .bind(&author.name)
@@ -65,7 +65,7 @@ impl AuthorTableTrait for AuthorRepo {
             UPDATE author
             SET name = $1, email = $2
             WHERE id = $3
-            RETURNING id, name, email, user_id, created_at
+            RETURNING id, name, email, created_at
             "#,
         )
         .bind(&author.name)

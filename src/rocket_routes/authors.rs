@@ -135,7 +135,6 @@ mod tests {
         async fn create(&self, new: NewAuthor) -> Result<Author> {
             Ok(Author {
                 id: 42,
-                user_id: new.user_id,
                 name: new.name,
                 email: new.email,
                 created_at: Utc::now().naive_utc(),
@@ -155,7 +154,6 @@ mod tests {
     async fn test_get_authors_returns_list() {
         let author = Author {
             id: 1,
-            user_id: Some(1),
             name: "Alice".into(),
             email: "alice@example.com".into(),
             created_at: Utc::now().naive_utc(),
@@ -184,7 +182,6 @@ mod tests {
     async fn test_view_author_success() {
         let author = Author {
             id: 5,
-            user_id: Some(1),
             name: "Bob".into(),
             email: "bob@example.com".into(),
             created_at: Utc::now().naive_utc(),
@@ -221,7 +218,6 @@ mod tests {
         }));
 
         let new_author = Json(NewAuthor {
-            user_id: Some(123),
             name: "Charlie".into(),
             email: "charlie@example.com".into(),
         });
@@ -240,7 +236,6 @@ mod tests {
     async fn test_update_author_success() {
         let existing = Author {
             id: 10,
-            user_id: Some(1),
             name: "Old Name".into(),
             email: "old@example.com".into(),
             created_at: Utc::now().naive_utc(),
@@ -258,7 +253,6 @@ mod tests {
 
         let updated = Json(Author {
             id: 10,
-            user_id: Some(1),
             name: "Updated Name".into(),
             email: "updated@example.com".into(),
             created_at: Utc::now().naive_utc(),
@@ -279,7 +273,6 @@ mod tests {
     async fn test_delete_author_success() {
         let author = Author {
             id: 7,
-            user_id: Some(1),
             name: "ToDelete".into(),
             email: "delete@example.com".into(),
             created_at: Utc::now().naive_utc(),
