@@ -16,14 +16,12 @@ pub struct Author {
     pub name: String,
     pub email: String,
     pub created_at: NaiveDateTime,
-    pub user_id: Option<i32>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct NewAuthor {
     pub name: String,
     pub email: String,
-    pub user_id: Option<i32>,
 }
 
 // Trait alias for shared trait objects

@@ -22,7 +22,6 @@ struct AuthorRow {
     id: i32,
     name: String,
     email: String,
-    user_id: Option<i32>,
     created_at: chrono::NaiveDateTime,
 }
 
@@ -32,7 +31,6 @@ impl From<AuthorRow> for Author {
             id: row.id,
             name: row.name,
             email: row.email,
-            user_id: row.user_id,
             created_at: row.created_at,
         }
     }
@@ -45,14 +43,13 @@ impl AuthorTableTrait for AuthorRepo {
         // ---
         let row = sqlx::query_as::<_, AuthorRow>(
             r#"
-            INSERT INTO author (name, email, user_id)
-            VALUES ($1, $2, $3)
-            RETURNING id, name, email, user_id, created_at
+            INSERT INTO author (name, email)
+            VALUES ($1, $2)
+            RETURNING id, name, email, created_at
             "#,
         )
         .bind(&author.name)
         .bind(&author.email)
-        .bind(author.user_id)
         .fetch_one(&self.pool)
         .await
         .context("AuthorRepo::create failed")?;
@@ -66,14 +63,13 @@ impl AuthorTableTrait for AuthorRepo {
         let row = sqlx::query_as::<_, AuthorRow>(
             r#"
             UPDATE author
-            SET name = $1, email = $2, user_id = $3
-            WHERE id = $4
-            RETURNING id, name, email, user_id, created_at
+            SET name = $1, email = $2
+            WHERE id = $3
+            RETURNING id, name, email, created_at
             "#,
         )
         .bind(&author.name)
         .bind(&author.email)
-        .bind(author.user_id)
         .bind(id)
         .fetch_one(&self.pool)
         .await
@@ -87,7 +83,7 @@ impl AuthorTableTrait for AuthorRepo {
         // ---
         let author = sqlx::query_as::<_, AuthorRow>(
             r#"
-            SELECT id, name, email, user_id, created_at
+            SELECT id, name, email, created_at
             FROM author
             WHERE id = $1
             "#,
@@ -105,7 +101,7 @@ impl AuthorTableTrait for AuthorRepo {
         // ---
         let authors = sqlx::query_as::<_, AuthorRow>(
             r#"
-            SELECT id, name, email, user_id, created_at
+            SELECT id, name, email, created_at
             FROM author
             ORDER BY id
             LIMIT $1
