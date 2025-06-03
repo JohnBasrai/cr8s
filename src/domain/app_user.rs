@@ -36,7 +36,8 @@ pub type AppUserWithRoleCodes = (AppUser, Vec<RoleCode>);
 #[async_trait::async_trait]
 pub trait AppUserTableTrait: Send + Sync {
     // ---
-
+    // Core methods - MUST be implemented (no defaults)
+    //
     /// Create a new user with the given roles, roles may be empty.
     async fn create(&self, new_user: NewUser, role_codes: Vec<RoleCode>) -> Result<AppUser>;
 
@@ -46,17 +47,25 @@ pub trait AppUserTableTrait: Send + Sync {
     /// Find the roles that this user has.
     async fn find_roles_by_user(&self, user: &AppUser) -> Result<Vec<RoleCode>>;
 
-    /// Deletes a user from the system by their unique ID.
-    async fn delete_by_id(&self, user_id: i32) -> Result<()>;
-
-    /// Deletes a user by their unique username.
-    async fn delete_by_username(&self, username: &str) -> Result<()>;
-
     /// Finds a user by their unique username.
     async fn find_by_username(&self, username: &str) -> Result<AppUser>;
 
+    // Administrative methods with test-friendly defaults
+
+    /// Deletes a user from the system by their unique ID.
+    async fn delete_by_id(&self, _user_id: i32) -> Result<()> {
+        Ok(()) // Default: no-op for tests
+    }
+
+    /// Deletes a user by their unique username.
+    async fn delete_by_username(&self, _username: &str) -> Result<()> {
+        Ok(()) // Default: no-op for tests
+    }
+
     /// Finds all users and their roles.
-    async fn find_with_roles(&self) -> Result<Vec<AppUserWithRoleCodes>>;
+    async fn find_with_roles(&self) -> Result<Vec<AppUserWithRoleCodes>> {
+        Ok(vec![]) // Default: empty list for tests
+    }
 }
 
 /// Shared trait object for user data access.

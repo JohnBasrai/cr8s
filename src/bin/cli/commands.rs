@@ -22,6 +22,13 @@ pub async fn create_user(
 ) -> Result<()> {
     // ---
 
+    // DEBUG: Show what roles were parsed
+    println!(
+        "🔍 DEBUG: Received {} role codes: {:?}",
+        role_codes.len(),
+        role_codes
+    );
+
     let user_repo = create_app_user_repo();
 
     let password_hash = create_password_hasher()?
