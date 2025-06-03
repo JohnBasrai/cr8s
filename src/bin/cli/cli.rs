@@ -34,7 +34,8 @@ pub enum Commands {
         #[arg(short, long)]
         password: String,
 
-        /// Roles to assign (Admin, Editor, Viewer - case insensitive)
+        /// Roles to assign (case insensitive)
+        /// Valid roles: Admin, Editor, Viewer (or a/e/v shortcuts)
         #[arg(short, long, value_delimiter = ',')]
         roles: Vec<CliRoleCode>,
     },
@@ -101,12 +102,13 @@ impl std::str::FromStr for CliRoleCode {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "admin" => Ok(CliRoleCode::Admin),
-            "editor" => Ok(CliRoleCode::Editor),
-            "viewer" => Ok(CliRoleCode::Viewer),
+        let trimmed = s.trim().to_lowercase();
+        match trimmed.as_str() {
+            "admin" | "a" => Ok(CliRoleCode::Admin),
+            "editor" | "edit" | "e" => Ok(CliRoleCode::Editor),
+            "viewer" | "view" | "v" => Ok(CliRoleCode::Viewer),
             _ => Err(format!(
-                "Invalid role: '{}'. Valid roles: Admin, Editor, Viewer (case-insensitive)",
+                "Invalid role: '{}'. Valid roles: Admin, Editor, Viewer (or a/e/v shortcuts)",
                 s
             )),
         }
@@ -135,7 +137,7 @@ mod tests {
     // ---
 
     #[test]
-    fn test_create_user_basic() -> Result<()> {
+    fn test_create_user_basic_one_role() -> Result<()> {
         // ---
 
         let args = Cli::parse_from([
@@ -169,7 +171,7 @@ mod tests {
     // ---
 
     #[test]
-    fn test_create_user_multiple_roles() -> Result<()> {
+    fn test_create_user_multiple_roles_comma_separated() -> Result<()> {
         // ---
 
         let args = Cli::parse_from([
@@ -589,6 +591,34 @@ mod tests {
         }
 
         Ok(())
+    }
+
+    #[test]
+    fn test_role_case_insensitive_parsing() -> Result<()> {
+        // ---
+        let admin = "ADMIN"
+            .parse::<CliRoleCode>()
+            .map_err(|e| anyhow::anyhow!(e))?;
+        let editor = "EdItOr"
+            .parse::<CliRoleCode>()
+            .map_err(|e| anyhow::anyhow!(e))?;
+        let viewer = "viewer"
+            .parse::<CliRoleCode>()
+            .map_err(|e| anyhow::anyhow!(e))?;
+
+        ensure!(admin == CliRoleCode::Admin);
+        ensure!(editor == CliRoleCode::Editor);
+        ensure!(viewer == CliRoleCode::Viewer);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_invalid_role_parsing() {
+        // ---
+        let result = "invalid_role".parse::<CliRoleCode>();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Invalid role"));
     }
 
     // ---

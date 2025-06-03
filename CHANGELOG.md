@@ -8,6 +8,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## \[Unreleased]
 ---
 
+## [0.4.4] - 2025-06-03
+
+### Fixed
+- **CRITICAL:** Fixed EditorUser guard authorization logic that was preventing editor operations
+  - `is_editor()` method now properly queries user roles instead of always returning false
+  - Resolves 403 Forbidden errors when creating/editing rustaceans and crates via cr8s-fe
+  - Restores role-based access control functionality lost during Diesel→SQLx migration
+
+### Added
+- Comprehensive unit tests for role-based authorization (8 new test cases)
+- Test-friendly default implementations for administrative methods in `AppUserTableTrait`
+- Macro-based test utilities to reduce boilerplate in guard testing
+
+### Improved
+- Enhanced CLI role parsing with shortcuts (a/e/v for admin/editor/viewer)
+- Better error messages and case-insensitive role handling
+- Cleaner test architecture with focused mocks and proper error handling
+
+### Technical Details
+- Fixed async method signatures in `GuardedAppUser::is_editor()` and `is_admin()`
+- Added proper trait bounds for `AppUserTableTraitPtr` in test contexts
+- Improved guard implementation to use repository pattern for role lookups
+
 ## [0.4.3] - 2025-06-02
 
 ### Fixed
