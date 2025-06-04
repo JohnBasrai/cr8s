@@ -41,31 +41,21 @@ pub async fn run() -> Result<(), anyhow::Error> {
     use clap::Parser;
     let cli = Cli::parse();
 
-    // Check if this is just a CLI help/version request (no database needed)
+    // Always initialize services and build rocket
+    init_servcies!()?;
+    let rocket = build_rocket()?;
+
+    // Process inspection flags if requested (but don't exit)
     if cli.check || cli.dump_state_traits || cli.output.is_some() {
-        // --
-        // For inspection features, initialize database first
-        init_servcies!()?;
-
-        // Build rocket with database available
-        let rocket = build_rocket()?;
-
-        // Process the inspection flags and exit
-        if handle_inspection_args(&cli, &rocket)? {
-            return Ok(());
-        }
-    } else {
-        // Normal server startup - ALWAYS needs database before building rocket
-        init_servcies!()?;
-
-        // Build rocket with database available
-        let rocket = build_rocket()?;
-
-        check_unused_managed_state(&rocket);
-
-        tracing::info!("Startup completed in {:?}", start.elapsed());
-        rocket.launch().await?;
+        // ---
+        handle_inspection_args(&cli, &rocket)?;
+        // Continue execution instead of returning
     }
+
+    // Always do the unused state check and start server
+    check_unused_managed_state(&rocket);
+    tracing::info!("Startup completed in {:?}", start.elapsed());
+    rocket.launch().await?;
 
     Ok(())
 }
@@ -96,19 +86,42 @@ fn handle_inspection_args(cli: &Cli, rocket: &Rocket) -> Result<bool, anyhow::Er
 
 // ---
 
+// Define a debug macro
+macro_rules! debug_managed_type {
+    ($name:expr, $value:expr) => {
+        tracing::debug!("  - {}: {}", $name, std::any::type_name_of_val($value));
+    };
+}
+
 /// Build the rocket with all its fairings attached.
 fn build_rocket() -> Result<rocket::Rocket<rocket::Build>, anyhow::Error> {
     // ---
 
+    let app_user_repo = cr8s::domain::create_app_user_repo();
+    let crate_repo = cr8s::domain::create_crate_repo();
+    let author_repo = cr8s::domain::create_author_repo();
+    let cache_context = cr8s::domain::create_cache_context();
+    let password_hasher = cr8s::domain::create_password_hasher()?;
+    let health_service = cr8s::domain::create_cache_health_service()?;
+
+    // DEBUG: Log what we're managing
+    tracing::info!("🔧 Managing state types:");
+    debug_managed_type!("AppUserRepo", &app_user_repo);
+    debug_managed_type!("CrateRepo", &crate_repo);
+    debug_managed_type!("AuthorRepo", &author_repo);
+    debug_managed_type!("CacheContext", &cache_context);
+    debug_managed_type!("PasswordHasher", &password_hasher);
+    debug_managed_type!("HealthService", &health_service);
+
     Ok(rocket::build()
-        .manage(cr8s::domain::create_app_user_repo())
-        .manage(cr8s::domain::create_crate_repo())
-        .manage(cr8s::domain::create_author_repo())
-        .manage(cr8s::domain::create_cache_context())
-        .manage(cr8s::domain::create_password_hasher()?)
-        .manage(cr8s::domain::create_cache_health_service()?)
+        .manage(app_user_repo)
+        .manage(crate_repo)
+        .manage(author_repo)
+        .manage(cache_context)
+        .manage(password_hasher)
+        .manage(health_service)
         .mount(
-            "/",
+            "/cr8s",
             rocket::routes![
                 cr8s::rocket_routes::health_endpoint,
                 cr8s::rocket_routes::options,
