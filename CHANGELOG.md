@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## \[Unreleased]
 
+---
+## [0.4.6] - 2025-06-04
+
+### Fixed
+- **BREAKING**: Mount API routes under `/cr8s` prefix (requires frontend updates)
+
+### Added  
+- Enhanced development workflow with `--dev` build mode for faster iterations
+- Improved server debugging and startup inspection capabilities
+
+---
 ## [0.4.5] - 2025-06-04
 
 ### Fixed
@@ -15,7 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Role authorization now correctly fetches all user roles from database
 
 ---
-
 ## [0.4.4] - 2025-06-03
 
 ### Fixed
@@ -39,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added proper trait bounds for `AppUserTableTraitPtr` in test contexts
 - Improved guard implementation to use repository pattern for role lookups
 
+---
 ## [0.4.3] - 2025-06-02
 
 ### Fixed
@@ -54,7 +65,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Eliminated circular reference between `app_user` and `author` tables
 
 ---
-
 ## [v0.4.2] – 2025-05-31
 
 ### Added
@@ -75,6 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CLI**: Multiple bug fixes and stability improvements
 - **Build Performance**: Eliminated redundant Docker file copies and improved layer ordering
 
+---
 ## [v0.4.1] – 2025-05-29
 
 ### Added
@@ -115,7 +126,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ready for database-free testing as outlined in GitHub issue #22
 
 ---
-
 ## [v0.3.1] – 2025-05-17
 ### Added
 - `Rocket.toml.template` with `%{VAR}%` placeholders for dynamic build-time config
