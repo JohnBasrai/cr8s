@@ -35,7 +35,7 @@ docker compose up -d
 # Wait for services to be healthy with timeout
 echo "⏳ Waiting for services to be ready..."
 for i in {1..30}; do
-    if curl -sf http://127.0.0.1:8000/health > /dev/null 2>&1; then
+    if curl -sf http://127.0.0.1:8000/cr8s/health > /dev/null 2>&1; then
         echo "✅ Services ready after ${i}0 seconds"
         break
     fi
@@ -50,7 +50,7 @@ done
 
 # Test: Health check (smoke test essential)
 echo "🏥 Testing health endpoint..."
-if curl -sf http://127.0.0.1:8000/health; then
+if curl -sf http://127.0.0.1:8000/cr8s/health; then
     echo "✅ Health check passed"
 else
     echo "❌ Health check failed"
