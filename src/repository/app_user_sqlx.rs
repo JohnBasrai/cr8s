@@ -39,11 +39,6 @@ impl From<AppUserRow> for AppUser {
     }
 }
 
-#[derive(Debug, FromRow)]
-struct RoleCodeRow {
-    code: RoleCodeMapping,
-}
-
 #[async_trait]
 impl AppUserTableTrait for AppUserRepo {
     // ---
@@ -100,11 +95,13 @@ impl AppUserTableTrait for AppUserRepo {
     }
 
     // ---
+
     async fn find_roles_by_user(&self, user: &AppUser) -> Result<Vec<RoleCode>> {
         // ---
-        let rows = sqlx::query_as::<_, RoleCodeRow>(
+
+        let rows = sqlx::query_scalar::<_, RoleCodeMapping>(
             r#"
-            SELECT r.code as "code: RoleCodeMapping"
+            SELECT r.code
             FROM user_roles ur
             JOIN role r ON r.id = ur.role_id
             WHERE ur.user_id = $1
@@ -117,10 +114,14 @@ impl AppUserTableTrait for AppUserRepo {
             format!("AppUserRepo::find_roles_by_user: error getting roles for: {user:?}")
         })?;
 
-        Ok(rows.into_iter().map(|row| row.code.into()).collect())
+        Ok(rows
+            .into_iter()
+            .map(|role_mapping| role_mapping.into())
+            .collect())
     }
 
     // ---
+
     async fn delete_by_id(&self, user_id: i32) -> Result<()> {
         // ---
         sqlx::query(r#"DELETE FROM app_user WHERE id = $1"#)

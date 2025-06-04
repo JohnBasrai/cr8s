@@ -29,9 +29,22 @@ impl<'r> FromRequest<'r> for GuardedAppUser {
             None => return Outcome::Error((Status::Unauthorized, ())),
         };
 
-        // Get cache and user repo from Rocket state
-        let cache: &State<CacheContextTraitPtr> = request.guard().await.unwrap();
-        let user_repo: &State<AppUserTableTraitPtr> = request.guard().await.unwrap();
+        // Get cache and user repo from Rocket state - FIX: Remove unwrap()
+        let cache: &State<CacheContextTraitPtr> = match request.guard().await {
+            Outcome::Success(cache) => cache,
+            _ => {
+                tracing::debug!("Failed to get cache from Rocket state");
+                return Outcome::Error((Status::InternalServerError, ()));
+            }
+        };
+
+        let user_repo: &State<AppUserTableTraitPtr> = match request.guard().await {
+            Outcome::Success(repo) => repo,
+            _ => {
+                tracing::debug!("Failed to get user repo from Rocket state");
+                return Outcome::Error((Status::InternalServerError, ()));
+            }
+        };
 
         // Validate session token
         let user_id = match cache.inner().get_user_id_by_session_token(&token).await {
@@ -51,7 +64,6 @@ impl<'r> FromRequest<'r> for GuardedAppUser {
 
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for EditorUser {
-    // ---
     type Error = ();
 
     async fn from_request(req: &'r Request<'_>) -> rocket::request::Outcome<Self, Self::Error> {
@@ -65,20 +77,35 @@ impl<'r> FromRequest<'r> for EditorUser {
         // Then get the user repository from managed state
         let user_repo: &State<AppUserTableTraitPtr> = match req.guard().await {
             Outcome::Success(repo) => repo,
-            _ => return Outcome::Error((Status::InternalServerError, ())),
+            _ => {
+                tracing::debug!("EditorUser: Failed to get user repo from state");
+                return Outcome::Error((Status::InternalServerError, ()));
+            }
         };
 
         // Check permissions
         match user.is_editor(user_repo.inner()).await {
             Ok(true) => Outcome::Success(EditorUser(user)),
-            Ok(false) => Outcome::Error((Status::Forbidden, ())),
-            Err(_) => Outcome::Error((Status::InternalServerError, ())),
+            Ok(false) => {
+                tracing::debug!(
+                    "EditorUser: User {} lacks editor privileges",
+                    user.0.username
+                );
+                Outcome::Error((Status::Forbidden, ()))
+            }
+            Err(e) => {
+                tracing::debug!(
+                    "EditorUser: Role check failed for {}: {:?}",
+                    user.0.username,
+                    e
+                );
+                Outcome::Error((Status::InternalServerError, ()))
+            }
         }
     }
 }
 
 impl GuardedAppUser {
-    // ---
     pub async fn is_editor(&self, user_repo: &AppUserTableTraitPtr) -> anyhow::Result<bool> {
         let roles = user_repo.find_roles_by_user(&self.0).await?;
         Ok(roles
