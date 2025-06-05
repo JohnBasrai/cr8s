@@ -111,7 +111,7 @@ pub async fn load_schema_from_sql_file() -> Result<()> {
     for statement in sql_no_comments.split(';') {
         let trimmed = statement.trim();
         if !trimmed.is_empty() {
-            println!("✅ Executing statement {trimmed}");
+            tracing::debug!("✅ Executing statement {trimmed}");
             sqlx::query(trimmed).execute(pool).await.with_context(|| {
                 format!("Error executing statement:\n{trimmed}, while reading: {path}")
             })?;
@@ -119,6 +119,6 @@ pub async fn load_schema_from_sql_file() -> Result<()> {
     }
 
     // Step 5: Report success
-    println!("✅ Database initialized from {}", path);
+    tracing::info!("✅ Database initialized from {}", path);
     Ok(())
 }
