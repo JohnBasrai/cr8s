@@ -36,11 +36,14 @@ jobs:
               exit 1
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "VERSION: $VERSION"
 
       - name: 🔍 Run build verification tests
         env:
           VERSION: ${{ steps.get_version.outputs.version }}
-        run: ./scripts/build-verification-test.sh
+          CLI_IMAGE:    ghcr.io/johnbasrai/cr8s/cr8s-cli:${VERSION}
+          SERVER_IMAGE: ghcr.io/johnbasrai/cr8s/cr8s-server:${VERSION}
+        run: ./scripts/build-verification-test.sh --verbose
 
       - name: "🔍 Run integration tests (cli only currently)"
         env:
