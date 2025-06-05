@@ -24,18 +24,20 @@ services:
       retries: 5
 
   server:
-    image: ghcr.io/johnbasrai/cr8s/cr8s-server:${VERSION}
+    image: ${SERVER_IMAGE:-cr8s-server-dev:latest}
     pull_policy: never
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+    command: ${SERVER_DEBUG_ARGS:-}
     environment:
       ROCKET_PROFILE: default
       DATABASE_URL: postgres://postgres:secret@postgres:5432/cr8s
       REDIS_URL: redis://redis:6379/
       RUST_BACKTRACE: 1
+      RUST_LOG: ${RUST_LOG:-info}
     ports:
       - "8000:8000"
     healthcheck:
@@ -45,7 +47,7 @@ services:
       retries: 5
 
   cli:
-    image: ghcr.io/johnbasrai/cr8s/cr8s-cli:${VERSION}
+    image: ${CLI_IMAGE:-cr8s-cli-dev:latest}
     pull_policy: never
     depends_on:
       postgres:

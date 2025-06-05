@@ -113,7 +113,10 @@ pub async fn load_schema_from_sql_file() -> Result<()> {
         if !trimmed.is_empty() {
             tracing::debug!("✅ Executing statement {trimmed}");
             sqlx::query(trimmed).execute(pool).await.with_context(|| {
-                format!("Error executing statement:\n{trimmed}, while reading: {path}")
+                format!(
+                    "r#load_schema_from_sql_file: Error executing statement:\n\
+                          {trimmed}; while reading: {path}#"
+                )
             })?;
         }
     }

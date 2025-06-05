@@ -30,21 +30,32 @@ jobs:
       - name: 🛠 Extract version from VERSION file
         id: get_version
         run: |
-          echo "DEBUG: Current directory: $(pwd)"
-          echo "DEBUG: Files in directory: $(ls -la)"
           if [ -f VERSION ]; then
-            VERSION=$(cat VERSION)
-            echo "DEBUG: VERSION file exists, contains: '$VERSION'"
+              VERSION=$(cat VERSION)
           else
-            echo "DEBUG: VERSION file does not exist!"
-            exit 1
+              exit 1
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "VERSION: $VERSION"
 
       - name: 🔍 Run build verification tests
         env:
-          VERSION: ${{ steps.get_version.outputs.version }}
-        run: ./scripts/build-verification-test.sh
+          VERSION:      ${{ steps.get_version.outputs.version }}
+          CLI_IMAGE:    ghcr.io/johnbasrai/cr8s/cr8s-cli:${{ steps.get_version.outputs.version }}
+          SERVER_IMAGE: ghcr.io/johnbasrai/cr8s/cr8s-server:${{ steps.get_version.outputs.version }}
+        run: ./scripts/build-verification-test.sh --verbose
+
+      - name: "🔍 Run integration tests (cli only currently)"
+        env:
+          VERSION:      ${{ steps.get_version.outputs.version }}
+          CLI_IMAGE:    ghcr.io/johnbasrai/cr8s/cr8s-cli:${{ steps.get_version.outputs.version }}
+          SERVER_IMAGE: ghcr.io/johnbasrai/cr8s/cr8s-server:${{ steps.get_version.outputs.version }}
+          CI:           true
+        run: |
+          source scripts/dev-test-setup.sh
+          stop-services
+          docker ps -a
+          start-services && run-tests
 
       - name: 🔑 Login to GitHub Container Registry
         uses: docker/login-action@v3
