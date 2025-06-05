@@ -73,8 +73,8 @@ pub enum Commands {
         hours_since: i32,
     },
 
-    /// Initialize default roles in the system
-    InitDefaultRoles,
+    /// Load cr8s schema and default roles into the database
+    LoadSchema,
 }
 
 // ---
@@ -355,16 +355,16 @@ mod tests {
     // ---
 
     #[test]
-    fn test_init_default_roles() -> Result<()> {
+    fn test_load_schema() -> Result<()> {
         // ---
 
-        let args = Cli::parse_from(["cr8s-cli", "init-default-roles"]);
+        let args = Cli::parse_from(["cr8s-cli", "load-schema"]);
 
         match args.command {
-            Commands::InitDefaultRoles => {
+            Commands::LoadSchema => {
                 // No parameters to check
             }
-            _ => anyhow::bail!("Expected InitDefaultRoles command"),
+            _ => anyhow::bail!("Expected InitDatabase command"),
         }
 
         Ok(())

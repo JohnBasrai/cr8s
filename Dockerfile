@@ -60,5 +60,6 @@ USER root
 RUN /bin/sh -c 'echo "🔨 Building runtime CLI container" >&2'
 WORKDIR /app
 COPY --from=builder /app/target/release/cli /app/cli
+COPY --chown=appuser:appuser scripts/sql/db-init.sql /app/
 USER appuser
 ENTRYPOINT ["./cli"]

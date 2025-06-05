@@ -219,14 +219,6 @@ pub async fn digest_send(email: String, hours_since: i32) -> Result<()> {
 
 // ---
 
-pub async fn init_default_roles() -> Result<()> {
-    // ---
-
-    anyhow::bail!("init_default_roles is no longer supported")
-}
-
-// ---
-
 #[cfg(test)]
 mod tests {
 

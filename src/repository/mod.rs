@@ -31,6 +31,7 @@ pub use app_user_sqlx::create_app_user_repo;
 pub use author_sqlx::create_author_repo;
 pub use crate_sqlx::create_crate_repo;
 pub use database::init_database_with_retry_from_env;
+pub use database::load_schema_from_sql_file;
 pub use health_check::create_cache_health_service;
 pub use health_check::create_database_health_service;
 pub use redis_cache::create_cache_context;

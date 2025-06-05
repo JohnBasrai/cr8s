@@ -18,7 +18,6 @@ use commands::{
     delete_user_by_id,
     delete_user_by_username,
     digest_send,
-    init_default_roles,
     list_users_formatted,
     user_exists,
 };
@@ -26,6 +25,8 @@ use cr8s::domain::{
     //
     init_cache_with_retry_from_env,
     init_database_with_retry_from_env,
+    // -- Call into dab module to initialize cr8s schema and default roles
+    load_schema_from_sql_file,
 };
 
 // ---
@@ -91,8 +92,7 @@ async fn main() -> Result<()> {
         }
 
         Commands::DigestSend { email, hours_since } => digest_send(email, hours_since).await,
-
-        Commands::InitDefaultRoles => init_default_roles().await,
+        Commands::LoadSchema => load_schema_from_sql_file().await,
     }
 }
 

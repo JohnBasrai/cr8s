@@ -128,3 +128,17 @@ src/mock/
 The design applies the **Dependency Inversion Principle**, ensuring all high-level logic depends on interfaces, not implementations.
 
 ---
+
+## Schema Initialization
+
+The `cr8s` schema and default roles (`Admin`, `Editor`, `Viewer`) are loaded using the CLI:
+
+```bash
+# All of these will work
+cargo run --bin cli -- load-schema
+docker compose run cli --rm load-schema
+
+This executes `scripts/sql/db-init.sql` in full, and ensures the `role` table is pre-populated.
+
+Use `CR8S_DB_INIT_SQL=/path/to/alt.sql` to override the default file.
+

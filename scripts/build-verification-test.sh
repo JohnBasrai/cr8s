@@ -70,7 +70,7 @@ echo "✅ Redis connectivity passed"
 
 # Initialize database schema
 echo "📊 Initializing database schema..."
-docker compose exec -T postgres psql -U postgres cr8s < scripts/sql/db-init.sql
+docker compose run --rm cli load-schema
 echo "✅ Database schema initialized"
 
 # Debug schema if verbose mode
@@ -79,10 +79,6 @@ if [[ "$VERBOSE" == "--verbose" ]]; then
     docker compose exec -T postgres psql -U postgres cr8s -c "\dt"
     docker compose exec -T postgres psql -U postgres cr8s -c "\d role"
 fi
-
-echo "🧪 Loading default test data..."
-docker compose exec -T postgres psql -U postgres cr8s < scripts/sql/load-defaults.sql
-echo "✅ Default test data loaded"
 
 # Test: Core CLI functionality
 echo "🔧 Testing core CLI functionality..."
