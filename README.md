@@ -11,7 +11,7 @@ Sample full‑stack **Rust** web service demonstrating clean architecture, trait
 | HTTP  | **Rocket 0.5** | Async web framework |
 | DB    | **SQLx** + **PostgreSQL** | Async SQL with runtime verification |
 | Cache | **Redis** | Session / ephemeral storage |
-| Admin | CLI binary (`cargo run --bin cli`) | User management with trait-based architecture |
+| Admin | CLI binary (`cargo run --bin cli`) | User management, DB setup, and admin utilities |
 | Tests | `tokio`, `reqwest`, `sqlx` | Async/await integration tests with role-based auth |
 | Dev   | **Docker Compose** | One‑command reproducible stack |
 | CI    | **GitHub Actions** | Lint → migrate → build → test |
@@ -46,6 +46,17 @@ docker compose up -d postgres redis
 cargo run                      # backend starts on :8000
 ```
 
+### Initialize database schema
+
+```bash
+# Run using local cargo, prebuilt Docker, or Compose
+cargo run --bin cli -- load-schema
+docker compose run cli load-schema
+```
+
+This executes `scripts/sql/db-init.sql` and inserts default roles.
+Use `CR8S_DB_INIT_SQL=/path/to/alt.sql` to override the default file.
+
 ### With Frontend (`cr8s-fe`)
 
 See the **cr8s-fe** repository for full-stack development instructions.
@@ -73,8 +84,7 @@ cr8s/
 │
 ├── templates/email/           # Tera email templates
 ├── scripts/                   # development & deployment scripts
-│   ├── sql/db-init.sql       # database schema initialization
-│   └── quickstart-dev.sh     # one-shot dev bootstrap
+│   ├── quickstart-dev.sh      # one-shot dev bootstrap
 └── docs/                      # Docker tips & native workflow
 ```
 

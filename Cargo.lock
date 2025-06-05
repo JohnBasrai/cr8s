@@ -465,7 +465,7 @@ dependencies = [
 
 [[package]]
 name = "cr8s"
-version = "0.4.6"
+version = "0.4.7"
 dependencies = [
  "anyhow",
  "argon2",

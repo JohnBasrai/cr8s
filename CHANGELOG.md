@@ -7,7 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## \[Unreleased]
 
+## [0.4.7] - 2025-06-04
+
+### Added
+- New CLI command: `load-schema`
+  - Loads database schema and default roles from a SQL file (`scripts/sql/db-init.sql`)
+  - Path can be overridden with the `CR8S_DB_INIT_SQL` environment variable
+  - Automatically initializes the database connection pool before execution
+  - Replaces the deprecated `init-default-roles` command
+
 ---
+
 ## [0.4.6] - 2025-06-04
 
 ### Fixed

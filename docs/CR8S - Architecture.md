@@ -50,6 +50,7 @@ The repository layer demonstrates clear separation of concerns through focused, 
 | `crate_sqlx.rs`         | Rust crate/package metadata                 |
 | `role_code_sqlx.rs`     | Permission and role-based access control    |
 | `database.rs`           | Database connection and lifecycle management |
+| `load_schema_from_sql_file()` | Loads schema and default roles from SQL file   |
 | `redis_cache.rs`        | Session and ephemeral data caching          |
 | `env.rs`                | Environment configuration management        |
 | `health_check.rs`       | System diagnostics and monitoring           |
@@ -63,6 +64,13 @@ This modular design ensures that:
 - Infrastructure details remain hidden behind domain interfaces
 
 ### 6. Repository Layer
+
+The `repository/database.rs` module also includes `load_schema_from_sql_file()`, 
+which is invoked by the CLI `load-schema` command. It reads a SQL file (defaulting 
+to `scripts/sql/db-init.sql`), initializes the connection pool if necessary, and 
+executes the script as a batch — including insertion of default roles. The path 
+can be overridden using the `CR8S_DB_INIT_SQL` environment variable.
+
 
 Core SQLx-backed types (e.g. `AppUser`, `UserRole`, etc.) are defined in `src/repository/*_sqlx.rs` files, each focused on a specific domain entity.
 
