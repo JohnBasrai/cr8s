@@ -70,7 +70,7 @@ echo "✅ Redis connectivity passed"
 
 # Initialize database schema
 echo "📊 Initializing database schema..."
-docker compose exec -T postgres psql -U postgres cr8s < scripts/sql/db-init.sql
+docker compose run --rm cli load-schema
 echo "✅ Database schema initialized"
 
 # Debug schema if verbose mode

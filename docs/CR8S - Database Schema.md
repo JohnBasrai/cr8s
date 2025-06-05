@@ -136,7 +136,7 @@ The `cr8s` schema and default roles (`Admin`, `Editor`, `Viewer`) are loaded usi
 ```bash
 # All of these will work
 cargo run --bin cli -- load-schema
-docker compose run cli load-schema
+docker compose run cli --rm load-schema
 
 This executes `scripts/sql/db-init.sql` in full, and ensures the `role` table is pre-populated.
 

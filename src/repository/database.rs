@@ -82,26 +82,43 @@ pub async fn load_schema_from_sql_file() -> Result<()> {
     use std::env;
     use std::fs;
 
+    // Step 1: Resolve SQL file path from env or use default
     let path = env::var("CR8S_DB_INIT_SQL").unwrap_or_else(|_| "db-init.sql".to_string());
 
-    init_database_with_retry_from_env().await?;
+    // Step 2: Read the contents of the SQL file
+    let contents = fs::read_to_string(&path).with_context(|| {
+        format!(
+            "Failed to read SQL file at '{}'. Please check path, permissions, or volume mounts.",
+            path
+        )
+    })?;
 
-    let contents = fs::read_to_string(&path)
-        .with_context(|| format!("Failed to read SQL file at '{}'", path))?;
+    // Step 3: Strip inline '--' comments from each line
+    let sql_no_comments = contents
+        .lines()
+        .map(|line| {
+            if let Some(idx) = line.find("--") {
+                &line[..idx] // Keep only content before '--'
+            } else {
+                line
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
 
+    // Step 4: Execute each semicolon-separated statement individually
     let pool = get_pool();
+    for statement in sql_no_comments.split(';') {
+        let trimmed = statement.trim();
+        if !trimmed.is_empty() {
+            println!("✅ Executing statement {trimmed}");
+            sqlx::query(trimmed).execute(pool).await.with_context(|| {
+                format!("Error executing statement:\n{trimmed}, while reading: {path}")
+            })?;
+        }
+    }
 
-    sqlx::query(&contents)
-        .execute(pool)
-        .await
-        .with_context(|| {
-            let preview: String = contents.chars().take(500).collect();
-            format!(
-                "Failed to execute SQL init script at '{}'\n--- Preview ---\n{}",
-                path, preview
-            )
-        })?;
-
+    // Step 5: Report success
     println!("✅ Database initialized from {}", path);
     Ok(())
 }

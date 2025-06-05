@@ -51,7 +51,7 @@ cargo run                      # backend starts on :8000
 ```bash
 # Run using local cargo, prebuilt Docker, or Compose
 cargo run --bin cli -- load-schema
-docker compose run cli load-schema
+docker compose run cli --rm load-schema
 ```
 
 This executes `scripts/sql/db-init.sql` and inserts default roles.
