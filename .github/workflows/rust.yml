@@ -41,8 +41,8 @@ jobs:
       - name: 🔍 Run build verification tests
         env:
           VERSION: ${{ steps.get_version.outputs.version }}
-          CLI_IMAGE:    ghcr.io/johnbasrai/cr8s/cr8s-cli:${VERSION}
-          SERVER_IMAGE: ghcr.io/johnbasrai/cr8s/cr8s-server:${VERSION}
+          CLI_IMAGE:    ghcr.io/johnbasrai/cr8s/cr8s-cli:${{ env.VERSION }}
+          SERVER_IMAGE: ghcr.io/johnbasrai/cr8s/cr8s-server:${{ env.VERSION }}
         run: ./scripts/build-verification-test.sh --verbose
 
       - name: "🔍 Run integration tests (cli only currently)"
