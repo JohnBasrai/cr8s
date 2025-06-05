@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## \[Unreleased]
 
+## [0.4.8] - 2025-06-05
+
+### Added
+- **Integration Testing Framework**: Added comprehensive CLI integration tests (`cli_integration.rs`) that validate complete user management workflows against live Docker services
+- **Development Environment Setup**: New `dev-test-setup.sh` script providing interactive development environment with helper functions for testing and debugging
+- **CI Integration Testing**: Enhanced GitHub Actions workflow to run full integration tests as part of the build pipeline, ensuring CLI commands work correctly in containerized environments
+
+### Improved
+- **Build Script Enhancement**: Updated `build-images.sh` with better dev mode support and clearer output formatting
+- **Development Workflow**: Streamlined local development with easy-to-use commands for starting services, running tests, and debugging
+- **Quality Assurance**: Added end-to-end validation covering schema management, user operations, role validation, and cleanup verification
+
+### Technical Details
+- Integration tests cover complete CLI workflow: `load-schema`, `create-user`, `list-users`, `user-exists`, `delete-user-by-name`, and error handling
+- Development environment provides shell functions: `start-services`, `stop-services`, `run-tests`, `run-single-test`, `test-cli`, `show-logs`, `restart-server`
+- CI pipeline now validates both unit tests and integration tests before publishing container images
+- Test execution time optimized to ~14 seconds through efficient Docker layer caching
+
+### Developer Experience
+- Added visual prompt indicators showing development environment status (`cr8s-dev:running`, `cr8s-dev:stopped`)
+- Comprehensive error handling and cleanup in both local and CI environments
+- Clear documentation and helper text for all available development commands
+
+---
+
 ## [0.4.7] - 2025-06-04
 
 ### Added

@@ -1,20 +1,38 @@
 -- cr8s DB schema bootstrap file
 -- updated: 2025-05-25 (also see version # below)
 
+-- ========================================
+-- TEARDOWN: Clean slate approach  
+-- ========================================
+
+-- Drop tables in reverse dependency order (children first, parents last)
+DROP TABLE IF EXISTS user_roles CASCADE;
+DROP TABLE IF EXISTS crate CASCADE;
+DROP TABLE IF EXISTS app_user CASCADE;
+DROP TABLE IF EXISTS author CASCADE;
+DROP TABLE IF EXISTS role CASCADE;
+DROP TABLE IF EXISTS schema_version CASCADE;
+
+-- Drop types
+DROP TYPE IF EXISTS "RoleCodeMapping" CASCADE;
+
+-- ========================================
+-- SETUP: Build everything fresh
+-- ========================================
+
 CREATE TABLE schema_version (
   version TEXT NOT NULL,
   applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 INSERT INTO schema_version (version) VALUES ('1.0.0'); -- Version here.
 
+-- Create tables without foreign keys first
 CREATE TABLE app_user (
   id SERIAL PRIMARY KEY,
   username varchar(64) NOT NULL UNIQUE,
   password varchar(128) NOT NULL,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
-
-
 
 CREATE TABLE author (
   id SERIAL PRIMARY KEY,
@@ -23,10 +41,9 @@ CREATE TABLE author (
   created_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
+-- Add foreign key after both tables exist
 ALTER TABLE app_user
 ADD COLUMN author_id INTEGER UNIQUE REFERENCES author(id);
-
-
 
 CREATE TABLE crate (
   id SERIAL PRIMARY KEY,
