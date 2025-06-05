@@ -355,13 +355,13 @@ mod tests {
     // ---
 
     #[test]
-    fn test_init_database() -> Result<()> {
+    fn test_load_schema() -> Result<()> {
         // ---
 
-        let args = Cli::parse_from(["cr8s-cli", "init-database"]);
+        let args = Cli::parse_from(["cr8s-cli", "load-schema"]);
 
         match args.command {
-            Commands::InitDatabase => {
+            Commands::LoadSchema => {
                 // No parameters to check
             }
             _ => anyhow::bail!("Expected InitDatabase command"),

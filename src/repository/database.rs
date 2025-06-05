@@ -73,7 +73,7 @@ pub(crate) fn get_pool() -> &'static PgPool {
         .expect("Pool not initialized. Call init_pool_with_retry() first.")
 }
 
-/// Initialize cr8s schema and default roles, called from cli init-database command
+/// Initialize cr8s schema and default roles, called from cli load-schema command
 ///
 pub async fn load_schema_from_sql_file() -> Result<()> {
     // ---
@@ -92,7 +92,7 @@ pub async fn load_schema_from_sql_file() -> Result<()> {
     let pool = get_pool();
 
     sqlx::query(&contents)
-        .execute(&*pool)
+        .execute(pool)
         .await
         .with_context(|| {
             let preview: String = contents.chars().take(500).collect();
