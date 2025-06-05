@@ -6,13 +6,17 @@ progname="$(basename "${BASH_SOURCE[0]}")"
 # Source common functions  
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
-echo "$progname: 🧪 Setting up development environment for integration testing..."
-
-# Get version (needed for docker compose)
-VERSION=$(get-version)
-
-# Set up dev environment (assumes images already built)
-setup-dev-env
+if [ "${CI:-false}" = true ] ; then
+    PS1=CI
+    echo "$progname: 🧪 Setting up for CI workflow testing..."
+    : ${CLI_IMAGE:?is required}
+    : ${SERVER_IMAGE:?is required}
+    : ${VERSION:?is required}
+else
+    # Set up dev environment (assumes images already built)
+    echo "$progname: 🧪 Setting up development environment for integration testing..."
+    setup-dev-env
+fi
 
 echo "$progname: 🐳 Docker images expected:"
 echo "$progname:   SERVER_IMAGE = ${SERVER_IMAGE}"
@@ -22,7 +26,7 @@ echo "$progname:   VERSION      = ${VERSION}"
 # Set up development environment prompt with status
 if [[ -z "${CR8S_DEV_ENV:-}" ]]; then
     export CR8S_DEV_ENV="stopped"
-    export CR8S_ORIGINAL_PS1="${PS1}"
+    export CR8S_ORIGINAL_PS1="${PS1:-ps1}"
     
     update-cr8s-prompt() {
         local status="${CR8S_DEV_ENV:-stopped}"

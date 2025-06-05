@@ -47,7 +47,10 @@ jobs:
 
       - name: "🔍 Run integration tests (cli only currently)"
         env:
-          VERSION: ${{ steps.get_version.outputs.version }}
+          VERSION:      ${{ steps.get_version.outputs.version }}
+          CLI_IMAGE:    ghcr.io/johnbasrai/cr8s/cr8s-cli:${{ steps.get_version.outputs.version }}
+          SERVER_IMAGE: ghcr.io/johnbasrai/cr8s/cr8s-server:${{ steps.get_version.outputs.version }}
+          CI:           true
         run: |
           source scripts/dev-test-setup.sh
           stop-services

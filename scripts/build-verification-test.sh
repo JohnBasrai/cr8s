@@ -6,7 +6,7 @@ if [[ "$VERBOSE" == "--verbose" ]]; then
     set -x
 fi
 : ${VERSION:?is required}
-echo "VERSION      : {$VERSION}"
+echo "VERSION      : ${VERSION}"
 echo "CLI_IMAGE    : ${CLI_IMAGE}"
 echo "SERVER_IMAGE : ${SERVER_IMAGE}"
 
