@@ -88,3 +88,8 @@ CREATE TABLE user_roles (
   role_id INTEGER NOT NULL REFERENCES role(id) ON DELETE CASCADE,
   CONSTRAINT user_role_unique UNIQUE (user_id, role_id)
 );
+
+INSERT INTO role (code, name) VALUES
+  ('Admin', 'Administrator'),
+  ('Editor', 'Editor'),
+  ('Viewer', 'Viewer');

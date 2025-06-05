@@ -107,3 +107,5 @@ pub async fn init_database_with_retry_from_env() -> anyhow::Result<()> {
 pub async fn init_cache_with_retry_from_env() -> anyhow::Result<()> {
     crate::repository::init_cache_with_retry_from_env().await
 }
+
+pub use crate::repository::load_schema_from_sql_file;
