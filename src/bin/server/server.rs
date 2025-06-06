@@ -120,6 +120,7 @@ fn build_rocket() -> Result<rocket::Rocket<rocket::Build>, anyhow::Error> {
         .manage(cache_context)
         .manage(password_hasher)
         .manage(health_service)
+        .mount("/", rocket::routes![cr8s::rocket_routes::index])
         .mount(
             "/cr8s",
             rocket::routes![

@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## \[Unreleased]
 
+## [0.5.1] - 2025-06-06
+
+### Added
+- **Root Landing Page**: Added missing root endpoint (`/`) to resolve 404 errors when accessing the server base URL
+  - Provides basic server information and API endpoint discovery
+  - Improves developer experience for API exploration
+
+### Fixed
+- **Docker Compose Health Check**: Corrected server health check endpoint in `docker-compose.yml`
+  - Fixed invalid health check path that was preventing proper container health monitoring
+  - Server health checks now properly validate service availability during startup
+
+---
+
 ## [0.5.0] - 2025-06-06
 
 ### Added
