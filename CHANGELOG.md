@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## \[Unreleased]
 
+## [0.5.0] - 2025-06-06
+
+### Added
+- **Server Integration Testing**: Complete HTTP API testing suite with 4 comprehensive tests
+  - Login API validation (mirrors Playwright authentication flow in cr8s-fe)
+  - Rustacean (author) creation testing with authentication
+  - Crate creation workflow testing
+  - Authentication guard integration testing (validates full Rocket guard flow)
+- **Enhanced Development Workflow**: Updated `dev-test-setup.sh` with server testing functions
+  - `run-server-tests` - Run HTTP API integration tests
+  - `run-single-server-test` - Run specific server test
+  - `run-tests` - Run both CLI and server tests
+  - `check-server` - Server health and log utilities
+  - Docker compose aliases (`dc`, `dcr`) for faster workflows
+- **Guard Integration Testing**: Comprehensive authentication/authorization flow validation
+  - Bearer token extraction and validation
+  - Redis session management testing
+  - Database role lookup verification
+  - Consistent auth enforcement across endpoints
+- **Documentation Overhaul**: 
+  - Updated architecture documentation with testing strategy
+  - Enhanced database schema documentation
+  - Improved development workflow documentation
+  - Removed outdated mock system references
+
+### Changed
+- **Testing Architecture**: Multi-layered approach with complementary unit and integration tests
+- **Documentation Strategy**: Eliminated redundancy between README and detailed docs
+- **Development Experience**: Streamlined commands and better error handling
+
+### Removed
+- **Mock Infrastructure**: Removed unused `src/mock/` directory and references
+- **Redundant Documentation**: Cleaned up duplicate information across docs
+
+### Fixed
+- **Local CLI Commands**: Corrected environment variable requirements in documentation
+- **Schema Documentation**: Fixed missing `CR8S_DB_INIT_SQL` path requirement
+- **Architecture References**: Updated outdated module structure references
+
+### Infrastructure
+- **Integration Test Coverage**: Server tests now validate the same API flows that Playwright tests depend on
+- **Development Environment**: Enhanced with server testing capabilities and better health checks
+- **Documentation Accuracy**: All docs now reflect current codebase structure
+
+---
+
 ## [0.4.8] - 2025-06-05
 
 ### Added

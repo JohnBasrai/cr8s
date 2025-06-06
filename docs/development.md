@@ -18,6 +18,61 @@ cargo run --bin server -- --help
 | `--check` | Enable CI mode: fail if manage()/State<T> mismatch found | ✅ Yes |
 | `--output <PATH>` | Output route table to Markdown file | ✅ Yes |
 
+## Integration Testing Workflow
+
+### Test Structure
+
+```
+tests/
+├── cli_integration.rs     # CLI command testing via docker compose
+├── server_integration.rs  # HTTP API endpoint testing
+└── (unit tests in src/tests/)
+```
+
+### Running All Tests
+
+```bash
+# Source the development environment
+source scripts/dev-test-setup.sh
+
+# Start services and run both CLI and server tests  
+start-services && run-tests
+```
+
+### Individual Test Suites
+
+```bash
+# Test CLI commands
+run-cli-tests
+
+# Test HTTP API endpoints  
+run-server-tests
+
+# Run specific server test
+run-single-server-test test_login_api
+
+# Check server health and logs
+check-server
+
+# Utility aliases
+dc ps                    # docker compose ps
+dcr cli list-users      # docker compose run --rm cli list-users
+```
+
+### Development Environment Functions
+
+The `dev-test-setup.sh` script provides these functions:
+
+| Function | Purpose |
+|----------|---------|
+| `start-services` | Start postgres, redis, server + create test user |
+| `stop-services` | Stop all services |
+| `run-tests` | Run all integration tests (CLI + Server) |
+| `run-cli-tests` | Run CLI integration tests |
+| `run-server-tests` | Run server integration tests |
+| `check-server` | Check server health and logs |
+| `restart-server` | Restart just the server |
+
 ## Quick Development Workflow
 
 For fastest iteration during development:
@@ -156,12 +211,15 @@ The different URLs are needed because:
 - `127.0.0.1:6379` connects from host to container
 - `redis` uses Docker's internal service name for container-to-container communication
 
+See the [Container Usage Guide](container-usage-guide.md) for detailed Redis networking information.
+
 ## Development Best Practices
 
 1. **Always test help/version flags** - These should work without any dependencies
 2. **Use Docker for inspection features** - Avoids local database setup complexity  
 3. **Run `--check` before commits** - Catches State<T> management issues early
 4. **Update route docs** - Run `--output` when adding new routes
+5. **Test integration endpoints** - Run `run-server-tests` to validate API changes
 
 ## Integration with Container Tests
 

@@ -19,6 +19,7 @@ use std::str;
 
 /// Base command builder for cr8s CLI via docker compose
 fn cli_command() -> Command {
+    // ---
     let mut cmd = Command::new("docker");
     cmd.args(["compose", "run", "--rm", "cli"]);
     cmd.stdout(Stdio::piped());
@@ -28,6 +29,7 @@ fn cli_command() -> Command {
 
 /// Helper to run CLI command and return output
 async fn run_cli_command(args: &[&str]) -> Result<(String, String, i32)> {
+    // ---
     let output = cli_command()
         .args(args)
         .output()
@@ -46,6 +48,7 @@ async fn run_cli_command(args: &[&str]) -> Result<(String, String, i32)> {
 
 /// Helper to assert command succeeded
 async fn assert_cli_success(args: &[&str]) -> Result<String> {
+    // ---
     let (stdout, stderr, code) = run_cli_command(args).await?;
 
     ensure!(
@@ -62,6 +65,7 @@ async fn assert_cli_success(args: &[&str]) -> Result<String> {
 
 /// Helper to assert command failed with specific code
 async fn assert_cli_failure(args: &[&str], expected_code: i32) -> Result<String> {
+    // ---
     let (stdout, stderr, code) = run_cli_command(args).await?;
 
     ensure!(
@@ -79,6 +83,7 @@ async fn assert_cli_failure(args: &[&str], expected_code: i32) -> Result<String>
 
 #[tokio::test]
 async fn test_complete_cli_workflow() -> Result<()> {
+    // ---
     println!("🚀 Starting complete CLI integration test");
 
     // Step 1: Set up clean database

@@ -39,14 +39,6 @@
 - Fields: `id`, `user_id`, `role_id`
 - Uniqueness constraint on `(user_id, role_id)`
 
-### Joinable Macros
-```rust
-diesel::joinable!(app_user -> author (author_id));
-diesel::joinable!(crate_ -> author (author_id));
-diesel::joinable!(user_role -> app_user (user_id));
-diesel::joinable!(user_role -> role (role_id));
-```
-
 ---
 
 ## Trait Naming Convention
@@ -73,46 +65,45 @@ Each table is abstracted via a trait:
 
 ### `src/domain/`
 - Pure traits, one per file
-- No awareness of Diesel or mocks
+- No awareness of SQLx or mocks
 
 ```
 src/domain/
-├── app_user.rs        // DMO + AppUserTableTrait
-├── author.rs          // DMO + AuthorTableTrait
-├── krate.rs           // DMO + CrateTableTrait
-├── mail.rs            // DMO + MailerTrait
-├── password.rs        // DMO + PasswordHasherTrait
-├── role_code.rs       // DMO + RoleCodeTableTrait
-├── user_role.rs       // DMO + UserRoleTableTrait
-├── server_info.rs     // Diagnostic trait: ServerInfoTrait
-└── mod.rs             // Public-facing API: re-exports all DMO + traits
+├── app_user.rs        # DMO + AppUserTableTrait
+├── authorization.rs   # Auth utilities and helpers
+├── author.rs          # DMO + AuthorTableTrait
+├── cache.rs           # Cache abstractions and traits
+├── health.rs          # Health check traits
+├── krate.rs           # DMO + CrateTableTrait
+├── mail.rs            # DMO + MailerTrait
+├── password.rs        # DMO + PasswordHasherTrait
+├── role_code.rs       # DMO + RoleCodeTableTrait
+└── mod.rs             # Public-facing API: re-exports all DMO + traits
 ```
 
 ### Domain Module Notes
 
 - `mod.rs` serves as the central API for the domain layer, re-exporting only the public-facing traits and types (DMOs).
 - Internal scoping (e.g., `pub(super)`) is used where possible to restrict visibility, while maintaining module usability.
-- `ServerInfoTrait` is not tied to a specific table but provides metadata access (e.g., server IP). Its role is similar to a system utility service, useful for diagnostics or CLI tooling.
+- `authorization.rs` provides auth utilities and credential handling
+- `cache.rs` and `health.rs` provide infrastructure abstractions for caching and diagnostics
 
 ### `src/repository/`
 
-- Diesel-backed implementations of the traits, the types are not to be used out side of src/repository/
+- SQLx-backed implementations of the traits, the types are not to be used outside of src/repository/
 
 ```
 src/repository/
-├── diesel.rs          // Diesel-backed types and trait impls
-├── provider.rs        // Higher-level repository orchestration
-└── mod.rs             // Public interface layer for repository consumers
-```
-
-### `src/mock/` (optional)
-- In-memory mock implementations for testing
-
-```
-src/mock/
-├── mock_app_user.rs
-├── mock_author.rs
-...
+├── app_user_sqlx.rs   # SQLx-backed user authentication
+├── author_sqlx.rs     # SQLx-backed author management
+├── crate_sqlx.rs      # SQLx-backed crate management  
+├── database.rs        # Database connection and lifecycle
+├── env.rs             # Environment configuration
+├── health_check.rs    # System diagnostics implementation
+├── redis_cache.rs     # Redis caching implementation
+├── role_code_mapping.rs # Static role definitions
+├── role_code_sqlx.rs  # SQLx-backed role management
+└── mod.rs             # Public interface layer for repository consumers
 ```
 
 ---
@@ -121,9 +112,9 @@ src/mock/
 
 | Layer        | Aware Of             | Unaware Of          |
 |--------------|----------------------|---------------------|
-| `domain/`    | Traits               | Diesel, mocks       |
-| `repository/`| Diesel               | Mocks               |
-| `mock/`      | Mocks                | Diesel              |
+| `domain/`    | Traits               | SQLx, mocks         |
+| `repository/`| SQLx                 | Mocks               |
+| `mock/`      | Mocks                | SQLx                |
 
 The design applies the **Dependency Inversion Principle**, ensuring all high-level logic depends on interfaces, not implementations.
 
@@ -134,11 +125,16 @@ The design applies the **Dependency Inversion Principle**, ensuring all high-lev
 The `cr8s` schema and default roles (`Admin`, `Editor`, `Viewer`) are loaded using the CLI:
 
 ```bash
-# All of these will work
+# Docker compose (recommended - handles environment automatically)
+docker compose run --rm cli load-schema
+
+# Local cargo (requires manual environment and path setup)
+export DATABASE_URL="postgres://postgres:secret@localhost:5432/cr8s"
+export REDIS_URL="redis://127.0.0.1:6379/"
+export CR8S_DB_INIT_SQL="scripts/sql/db-init.sql"
 cargo run --bin cli -- load-schema
-docker compose run cli --rm load-schema
+```
 
 This executes `scripts/sql/db-init.sql` in full, and ensures the `role` table is pre-populated.
 
 Use `CR8S_DB_INIT_SQL=/path/to/alt.sql` to override the default file.
-
