@@ -36,3 +36,41 @@ pub use authors::{
     update_rustacean,
     view_rustacean,
 };
+
+use rocket::get;
+#[get("/")]
+pub fn index() -> rocket::response::content::RawHtml<&'static str> {
+    rocket::response::content::RawHtml(
+        r#"
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>CR8S API</title>
+        <style>
+            body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; }
+            .api-link { color: #007acc; text-decoration: none; }
+            .api-link:hover { text-decoration: underline; }
+            .status { margin: 1rem 0; padding: 1rem; background: #f5f5f5; border-radius: 4px; }
+        </style>
+    </head>
+    <body>
+        <h1>🧪 CR8S API Server</h1>
+        <p>Welcome to the CR8S (Crates) API - a Rust web service for managing crate and author information.</p>
+        
+        <div class="status">
+            <h3>🔗 API Endpoints</h3>
+            <ul>
+                <li><a href="/cr8s/health" class="api-link">/cr8s/health</a> - Health check</li>
+                <li><a href="/cr8s/login" class="api-link">/cr8s/login</a> - Authentication (POST)</li>
+                <li><a href="/cr8s/rustaceans" class="api-link">/cr8s/rustaceans</a> - Authors (requires auth)</li>
+                <li><a href="/cr8s/crates" class="api-link">/cr8s/crates</a> - Crates (requires auth)</li>
+            </ul>
+        </div>
+        
+        <p>📖 For documentation and setup instructions, visit the 
+           <a href="https://github.com/johnbasrai/cr8s" class="api-link">GitHub repository</a>.</p>
+    </body>
+    </html>
+    "#,
+    )
+}
