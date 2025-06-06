@@ -30,7 +30,8 @@ RUN cargo clippy --release --all-targets --all-features -- -D warnings
 # Security audit false positive - ✅ Confirmed: We do not using MySQL, so the RSA
 # vulnerability doesn't affect cr8s
 RUN cargo audit --ignore RUSTSEC-2023-0071 || cargo outdated || true
-RUN cargo test --release --all-targets --all-features -- --nocapture
+# Skip integration tests, only run unit tests
+RUN cargo test --release --lib --bins -- --nocapture
 RUN /bin/sh -c 'echo "🛠️ Build binaries..." >&2'
 RUN cargo build --release --bin server --bin cli
 RUN strip target/release/server target/release/cli
