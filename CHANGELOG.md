@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## \[Unreleased]
 
+## [0.5.2] - 2025-06-06
+- CI workflow was running cli_integration test twice and not running server_integration at all.
+
 ## [0.5.1] - 2025-06-06
 
 ### Added

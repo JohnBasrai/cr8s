@@ -67,7 +67,7 @@ jobs:
           source scripts/dev-test-setup.sh
           stop-services
           start-services
-          cargo test --test cli_integration -- --nocapture
+          cargo test --test server_integration -- --nocapture
 
       - name: 🔑 Login to GitHub Container Registry
         uses: docker/login-action@v3
