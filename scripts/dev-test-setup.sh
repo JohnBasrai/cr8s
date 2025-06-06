@@ -51,9 +51,18 @@ start-services() {
     echo "⏳ Waiting for services to be ready..."
     wait-for-services
     
+    echo "📊 Loading database schema..."
+    docker compose run --rm cli load-schema
+    
+    echo "👤 Creating test admin user (admin@example.com)..."
+    docker compose run --rm cli create-user \
+        --username admin@example.com \
+        --password password123 \
+        --roles admin,editor,viewer
+    
     export CR8S_DEV_ENV="running"
     update-cr8s-prompt
-    echo "✅ Services ready!"
+    echo "✅ Services ready with test user!"
 }
 
 stop-services() {
@@ -64,33 +73,69 @@ stop-services() {
     echo "✅ Services stopped!"
 }
 
-run-tests() {
+# CLI Testing Functions
+run-cli-tests() {
     echo "🧪 Running CLI integration tests..."
     cargo test --test cli_integration "$@"
 }
 
-run-single-test() {
+# Server Testing Functions  
+run-server-tests() {
+    echo "🚀 Running server integration tests..."
+    
+    # Ensure services are running
+    if ! curl -sf http://127.0.0.1:8000/cr8s/health > /dev/null 2>&1; then
+        echo "❌ Server not responding. Starting services..."
+        start-services
+    fi
+    
+    cargo test --test server_integration "$@"
+}
+
+run-single-server-test() {
     local test_name="${1:-}"
     if [ -z "$test_name" ]; then
-        echo "Usage: run-single-test <test_name>"
-        echo "Available tests:"
-        cargo test --test cli_integration -- --list | grep "test " | sed 's/test /  /'
+        echo "Usage: run-single-server-test <test_name>"
+        echo "Available server tests:"
+        cargo test --test server_integration -- --list | grep "test " | sed 's/test /  /'
         return 1
     fi
     
-    echo "🧪 Running single test: $test_name"
-    cargo test --test cli_integration "$test_name" -- --nocapture
+    echo "🧪 Running single server test: $test_name"
+    
+    # Ensure services are running
+    if ! curl -sf http://127.0.0.1:8000/cr8s/health > /dev/null 2>&1; then
+        echo "❌ Server not responding. Starting services..."
+        start-services
+    fi
+    
+    cargo test --test server_integration "$test_name" -- --nocapture
 }
 
+# Combined test runner
+run-tests() {
+    echo "🧪 Running all integration tests (CLI + Server)..."
+    
+    # Ensure services are running
+    if ! curl -sf http://127.0.0.1:8000/cr8s/health > /dev/null 2>&1; then
+        echo "❌ Server not responding. Starting services..."
+        start-services
+    fi
+    
+    echo "📋 Step 1: CLI tests..."
+    run-cli-tests "$@"
+    
+    echo "📋 Step 2: Server tests..."
+    run-server-tests "$@"
+    
+    echo "🎉 All integration tests completed!"
+}
+
+# Utility Functions
 show-logs() {
     local service="${1:-server}"
     echo "📋 Showing logs for $service..."
     docker compose logs -f "$service"
-}
-
-test-cli() {
-    echo "🔧 Testing CLI command: $*"
-    docker compose run --rm cli "$@"
 }
 
 restart-server() {
@@ -103,6 +148,32 @@ restart-server() {
     update-cr8s-prompt
     echo "✅ Server restarted!"
 }
+
+check-server() {
+    echo "🏥 Checking server health and status..."
+    
+    echo "--- Basic Health Check ---"
+    if curl -sf http://127.0.0.1:8000/cr8s/health; then
+        echo " ✅ Health check passed"
+    else
+        echo " ❌ Health check failed"
+    fi
+    
+    echo -e "\n--- Server Status ---"
+    if docker compose ps server | grep -q "healthy"; then
+        echo " ✅ Server container healthy"
+    else
+        echo " ⚠️  Server container status:"
+        docker compose ps server
+    fi
+    
+    echo -e "\n--- Recent Server Logs ---"
+    docker compose logs --tail=10 server
+}
+
+# Docker compose aliases
+alias dc='docker compose'
+alias dcr='docker compose run --rm'
 
 deactivate-cr8s() {
     if [[ -n "${CR8S_ORIGINAL_PS1:-}" ]]; then
@@ -120,11 +191,14 @@ deactivate-cr8s() {
               start-services \
               stop-services \
               restart-server \
+              run-cli-tests \
+              run-server-tests \
+              run-single-server-test \
               run-tests \
-              run-single-test \
-              test-cli \
               show-logs \
+              check-server \
               deactivate-cr8s
+        unalias dc dcr 2>/dev/null || true
         echo "✅ cr8s development environment deactivated"
     else
         echo "⚠️  No cr8s environment to deactivate"
@@ -134,15 +208,24 @@ deactivate-cr8s() {
 # Show available commands
 echo ""
 echo "$progname: ✅ Environment ready! Available commands:"
-echo "$progname:   start-services    # Start postgres, redis, server"
-echo "$progname:   stop-services     # Stop all services"
-echo "$progname:   run-tests         # Run all CLI integration tests"
-echo "$progname:   run-single-test   # Run a specific test"
-echo "$progname:   test-cli          # Run a CLI command directly"
-echo "$progname:   show-logs         # Show service logs" 
-echo "$progname:   restart-server    # Restart just the server"
-echo "$progname:   deactivate-cr8s   # Exit development environment"
 echo ""
-echo "$progname: 🚀 Quick start:"
+echo "$progname:🚀 Service Management:"
+echo "$progname:   start-services       # Start postgres, redis, server + create test user"
+echo "$progname:   stop-services        # Stop all services"
+echo "$progname:   restart-server       # Restart just the server"
+echo "$progname:   show-logs [service]  # Show service logs (default: server)"
+echo "$progname:   check-server         # Check server health and logs"
+echo ""
+echo "$progname:🧪 Testing:"
+echo "$progname:   run-tests            # Run all integration tests (CLI + Server)"
+echo "$progname:   run-cli-tests        # Run CLI integration tests"
+echo "$progname:   run-server-tests     # Run server integration tests"
+echo "$progname:   run-single-server-test <name>  # Run specific server test"
+echo ""
+echo "$progname:🔧 Utilities:"
+echo "$progname:   dc                   # Alias for 'docker compose'"
+echo "$progname:   dcr                  # Alias for 'docker compose run --rm'"
+echo "$progname:   deactivate-cr8s      # Exit development environment"
+echo ""
+echo "$progname:🚀 Quick start:"
 echo "$progname:   start-services && run-tests"
-

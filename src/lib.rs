@@ -15,9 +15,6 @@ pub mod domain;
 // --- Mail delivery mechanisms ---
 pub mod mail;
 
-// --- Mocks
-pub mod mock;
-
 // --- Repository: Diesel-backed data layer ---
 pub mod repository;
 

@@ -28,9 +28,8 @@ Each layer has one clear responsibility:
 |----------------- | -------------------------------------- |
 | `domain/`        | core interfaces and shared data types  |
 | `repository/`    | SQLx-backed implementations            |
-| `mock/`          | test-only, in-memory mocks             |
-| `service/`       | business logic orchestration           |
-| `auth/`, `mail/` | side-effecting adapters and helpers    |
+| `rocket_routes/` | HTTP endpoint handlers                  |
+| `auth.rs`, `mail/` | side-effecting adapters and helpers  |
 
 ### 4. SOLID Principles in Practice
 - **S**ingle Responsibility: Each module has a focused purpose
@@ -107,12 +106,12 @@ src/repository/
 ├── app_user_sqlx.rs       # User authentication SQLx implementation
 ├── author_sqlx.rs         # Author/contributor SQLx implementation  
 ├── crate_sqlx.rs          # Crate metadata SQLx implementation
-├── role_code_sqlx.rs      # Role-based access control SQLx implementation
 ├── database.rs            # Database connection and lifecycle management
-├── redis_cache.rs         # Redis caching implementation
 ├── env.rs                 # Environment configuration
 ├── health_check.rs        # System diagnostics
+├── redis_cache.rs         # Redis caching implementation
 ├── role_code_mapping.rs   # Static role definitions
+├── role_code_sqlx.rs      # Role-based access control SQLx implementation
 └── mod.rs                 # Central API exposing public repository symbols
 ```
 
@@ -123,6 +122,32 @@ This layering ensures:
 - SQLx remains encapsulated and swappable
 - Domain code never depends directly on database schemas or ORM details
 - Repository logic is testable with in-memory or mock trait impls
+
+### Testing Architecture
+
+CR8S employs a comprehensive multi-layered testing strategy:
+
+| Test Layer | Location | Purpose | Coverage |
+|------------|----------|---------|----------|
+| **Unit Tests** | `src/*/mod.rs` (inline) | Business logic, role validation | Guard role logic, trait implementations |
+| **Integration Tests** | `tests/` | End-to-end workflows | CLI commands, HTTP API endpoints, authentication flows |
+| **Domain Visibility** | `src/tests/` | API encapsulation | Trait visibility, module boundaries |
+
+#### Integration Test Structure
+```
+tests/
+├── cli_integration.rs     # CLI command testing via Docker Compose
+├── server_integration.rs  # HTTP API endpoint testing
+└── (unit tests in src/tests/ for architectural validation)
+```
+
+**Key Testing Principles:**
+- **Unit tests** focus on isolated business logic with minimal mocks
+- **Integration tests** validate complete workflows using real infrastructure (PostgreSQL, Redis, HTTP)
+- **Complementary coverage** - unit tests skip complex integration scenarios, integration tests validate full stack
+- **Playwright alignment** - server integration tests mirror frontend test requirements
+
+This ensures both correctness of individual components and confidence in the complete system.
 
 ---
 

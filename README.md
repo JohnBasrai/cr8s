@@ -12,7 +12,7 @@ Sample full‑stack **Rust** web service demonstrating clean architecture, trait
 | DB    | **SQLx** + **PostgreSQL** | Async SQL with runtime verification |
 | Cache | **Redis** | Session / ephemeral storage |
 | Admin | CLI binary (`cargo run --bin cli`) | User management, DB setup, and admin utilities |
-| Tests | `tokio`, `reqwest`, `sqlx` | Async/await integration tests with role-based auth |
+| Tests | `tokio`, `reqwest` | CLI & HTTP API integration tests with authentication |
 | Dev   | **Docker Compose** | One‑command reproducible stack |
 | CI    | **GitHub Actions** | Lint → migrate → build → test |
 
@@ -24,7 +24,7 @@ Sample full‑stack **Rust** web service demonstrating clean architecture, trait
 - **Trait-Based Abstractions** - Clean boundaries between layers
 - **Repository Pattern** - Database access abstracted behind traits
 - **Dependency Injection** - Components use trait objects, not concrete types
-- **Clean Testing** - Comprehensive test coverage with mock implementations
+- **Multi-layered Testing** - Unit tests + integration tests for CLI & HTTP API
 
 ---
 
@@ -46,20 +46,34 @@ docker compose up -d postgres redis
 cargo run                      # backend starts on :8000
 ```
 
-### Initialize database schema
+### Initialize Database
 
-```bash
-# Run using local cargo, prebuilt Docker, or Compose
-cargo run --bin cli -- load-schema
-docker compose run cli --rm load-schema
-```
-
-This executes `scripts/sql/db-init.sql` and inserts default roles.
-Use `CR8S_DB_INIT_SQL=/path/to/alt.sql` to override the default file.
+See [docs/CR8S - Database Schema.md](docs/CR8S%20-%20Database%20Schema.md) for database setup instructions.
 
 ### With Frontend (`cr8s-fe`)
 
 See the **cr8s-fe** repository for full-stack development instructions.
+
+---
+
+## 🧪 Testing
+
+### Run All Tests
+```bash
+# Set up development environment
+source scripts/dev-test-setup.sh
+
+# Start services and run all tests
+start-services && run-tests
+```
+
+### Individual Test Suites
+```bash
+run-cli-tests        # Test CLI commands
+run-server-tests     # Test HTTP API endpoints
+```
+
+See [docs/development.md](docs/development.md) for detailed testing workflows.
 
 ---
 
@@ -77,10 +91,13 @@ cr8s/
 │   ├── domain/                # business logic traits & models
 │   ├── repository/            # SQLx implementations & database layer
 │   ├── rocket_routes/         # HTTP handlers & REST API
-│   ├── auth/                  # authentication & password handling
+│   ├── auth.rs                # authentication & password handling
 │   ├── mail/                  # email service implementation
-│   ├── mock/                  # test mocks & stubs
-│   └── tests/                 # integration tests
+│   └── tests/                 # unit tests & architectural validation
+│
+├── tests/                     # integration tests
+│   ├── cli_integration.rs     # CLI command testing
+│   └── server_integration.rs  # HTTP API testing
 │
 ├── templates/email/           # Tera email templates
 ├── scripts/                   # development & deployment scripts
@@ -108,4 +125,3 @@ Non-gating advisory checks (e.g., `cargo audit`, `cargo outdated`) are also incl
 ---
 
 MIT © 2025 John Basrai
-```
