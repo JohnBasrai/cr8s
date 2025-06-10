@@ -1,11 +1,11 @@
-//! Domain-layer abstraction for password-based authentication.
-//!
-//! This module defines the `PasswordHasherTrait` and related types.
+//! Domain-level abstraction for password hashing and verification.
 //!
 //! - Interface-only: contains no concrete hashing logic or dependencies like
 //!   `argon2`, `rand`, etc.
 //! - Designed for testability: can be mocked with in-memory or static implementations.
 //! - Intended for use across boundaries: CLI handlers, HTTP routes, or internal services.
+//!
+//! See `crate::auth::create_password_hasher` for the default implementation.
 
 use anyhow::Result;
 

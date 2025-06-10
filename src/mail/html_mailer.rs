@@ -1,5 +1,11 @@
+//! Tera-based HTML email renderer for cr8s.
+//!
 //! Internal implementation of `MailerTrait` using HTML templates.
 //! Do not use directly — access via `crate::mail::create_mailer()`.
+//!
+//! Converts domain email templates into final HTML bodies using the Tera engine.
+//! This file does not send mail—it focuses only on formatting.
+
 use crate::domain::{CrateSummary, MailerTrait, MailerTraitPtr};
 use anyhow::{anyhow, Context as AnyhowContext, Result};
 use lettre::{message::Mailbox, Message, SmtpTransport, Transport};
@@ -73,6 +79,18 @@ impl MailerTrait for HtmlMailer {
     }
 }
 
+/// Constructs the default mailer using Tera templates and SMTP credentials.
+///
+/// Loads all HTML templates under `templates/**/*.html`, then reads the following
+/// environment variables to configure the SMTP transport:
+/// - `SMTP_HOST`
+/// - `SMTP_USERNAME`
+/// - `SMTP_PASSWORD`
+///
+/// Returns a trait object (`MailerTraitPtr`) wrapped in an `Arc`.
+///
+/// # Errors
+/// Returns an error if templates cannot be loaded or any required env vars are missing.
 pub fn create_mailer() -> Result<MailerTraitPtr> {
     // ---
     let tera = Tera::new("templates/**/*.html").context("Cannot load template engine")?;

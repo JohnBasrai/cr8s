@@ -1,4 +1,27 @@
 #!/bin/bash
+# -----------------------------------------------------------------------------
+# build-images.sh – Build cr8s Docker images for the server and CLI binaries.
+#
+# Usage:
+#   ./scripts/build-images.sh [--debug] [--dev]
+#
+# Options:
+#   --debug    Enable verbose build output (useful for troubleshooting)
+#   --dev      Build images with branch- and commit-tagged dev labels,
+#              and tag them locally as `cr8s-server-dev:latest` and
+#              `cr8s-cli-dev:latest` for manual testing.
+#
+# This script:
+# - Extracts the current project version from Cargo.toml
+# - Tags images based on mode (release or dev)
+# - Builds Docker images using buildx with shared caching
+# - Outputs local and GHCR-compatible image tags
+#
+# For dev workflows, follow-up usage may include:
+#   ./scripts/dev-test-setup.sh        # Run full integration test stack
+#   docker push <image>                # Share images via GHCR
+# -----------------------------------------------------------------------------
+
 set -euo pipefail
 
 # Parse flags

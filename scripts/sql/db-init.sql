@@ -1,5 +1,18 @@
+-- -----------------------------------------------------------------------------
+-- db-init.sql – Initial database setup for cr8s development and testing.
+--
+-- This script creates the `cr8s` database and assigns the `postgres` user
+-- with full access. It is intended for use in local and CI environments
+-- where Postgres is running inside Docker (e.g., docker-compose).
+--
+-- Usage:
+--   docker exec -i <postgres-container> psql -U postgres < scripts/db-init.sql
+--
+-- Note:
+--   Schema migrations are managed separately via SQLx migrations.
+-- -----------------------------------------------------------------------------
+
 -- cr8s DB schema bootstrap file
--- updated: 2025-05-25 (also see version # below)
 
 -- ========================================
 -- TEARDOWN: Clean slate approach  

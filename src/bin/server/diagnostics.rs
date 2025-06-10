@@ -1,13 +1,22 @@
 // src/bin/server/diagnostics.rs
 
+//! Route inspection and Rocket state analysis tools.
+//!
+//! Used for CI validation and debugging:
+//! - Generates a Markdown table of route-to-State<T> dependencies
+//! - Finds unused or missing state types (WIP)
+
 use rocket::Rocket;
 
 // ---
 
 use anyhow::{Context, Result};
 
-/// Generates a Markdown-formatted table of route-to-State<T> dependencies,
-/// sorted by number of required `State<T>` values (most to least).
+/// Generates a Markdown-formatted table mapping Rocket routes to the
+/// `State<T>` types they depend on.
+///
+/// Only includes routes with at least one dependency.  Sorted by
+/// number of dependencies (descending).
 pub fn generate_route_state_markdown(rocket: &Rocket<rocket::Build>) -> Result<String> {
     // ---
 

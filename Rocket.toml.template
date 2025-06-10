@@ -1,3 +1,26 @@
+# -----------------------------------------------------------------------------
+# Rocket.toml.template – Environment-adaptable Rocket config for cr8s builds
+#
+# This file is copied into Docker images as Rocket.toml, often with build-time
+# substitution of placeholder variables (e.g., %{DATABASE_URL}%) for config injection.
+#
+# Placeholders:
+#   %{DATABASE_URL}%  → replaced with actual Postgres URL
+#   %{REDIS_URL}%     → replaced with Redis endpoint
+#
+# Usage Context:
+#   - Referenced in Dockerfile:
+#       COPY Rocket.toml.template /app/Rocket.toml
+#   - Not used directly by Rocket unless renamed to Rocket.toml
+#
+# Template format:
+#   Uses %{VAR}% markers for substitution, not shell-style $VAR
+#
+# See:
+#   - Dockerfile
+#   - scripts/build-images.sh
+#   - CHANGELOG.md (for history of format changes)
+# -----------------------------------------------------------------------------
 [default]
 address = "0.0.0.0"
 port = 8000

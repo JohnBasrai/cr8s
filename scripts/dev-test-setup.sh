@@ -1,4 +1,27 @@
 #!/bin/bash
+# -----------------------------------------------------------------------------
+# dev-test-setup.sh – Define local test helper functions for cr8s development.
+#
+# This script is meant to be sourced (not executed) to expose functions in the
+# user's shell environment. It simplifies running integration tests by setting
+# up aliases and workflows for:
+#
+# - Starting Postgres, Redis, and cr8s backend
+# - Seeding the test database
+# - Running CLI and HTTP API integration tests
+# - Checking server health and logs
+#
+# Usage:
+#   source scripts/dev-test-setup.sh
+#
+# Then invoke helpers:
+#   start-services      # Bring up services and seed test user
+#   run-tests           # Run CLI + server integration tests
+#   check-server        # View logs, confirm health
+#
+# Full list of functions is documented in docs/development.md
+# -----------------------------------------------------------------------------
+
 set -euo pipefail
 
 progname="$(basename "${BASH_SOURCE[0]}")"

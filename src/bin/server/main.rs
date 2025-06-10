@@ -1,4 +1,10 @@
 // src/bin/server/main.rs
+//! Entry point for the `cr8s` Rocket server binary.
+//!
+//! Delegates startup logic to `server::run`, which parses CLI flags,
+//! initializes services (Postgres, Redis), builds Rocket, and launches the app.
+//!
+//! CLI options for inspection (`--dump-state-traits`, `--check`, `--output`) are parsed here.
 
 //
 // Bring all submodules into scope

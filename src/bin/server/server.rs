@@ -1,5 +1,11 @@
 // src/bin/server/server.rs
-// Server implementation logic
+
+//! Full Rocket server initialization and CLI-aware entrypoint logic.
+//!
+//! Handles:
+//! - Database and cache setup
+//! - CLI flag parsing and route inspection
+//! - Rocket state management and route mounting
 
 // Declare the modules we need directly in this file
 
@@ -27,7 +33,10 @@ macro_rules! init_servcies {
 type Rocket = rocket::Rocket<rocket::Build>;
 
 // ---
-
+/// Launches the Rocket web server after initializing all infrastructure.
+///
+/// Responds to CLI flags for inspection (e.g., dump/check) but continues
+/// to launch the app unless an error occurs.
 pub async fn run() -> Result<(), anyhow::Error> {
     // --
     init_tracing();
@@ -60,7 +69,10 @@ pub async fn run() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-/// Handle CLI arguments that require route inspection (need full rocket with database)
+/// Handles inspection-related CLI flags (`--check`, `--dump-state-traits`, `--output`).
+///
+/// If requested, this prints or saves a Markdown summary of route dependencies.
+/// Does not terminate the server.
 fn handle_inspection_args(cli: &Cli, rocket: &Rocket) -> Result<bool, anyhow::Error> {
     // ---
     if cli.check || cli.dump_state_traits || cli.output.is_some() {
@@ -93,7 +105,10 @@ macro_rules! debug_managed_type {
     };
 }
 
-/// Build the rocket with all its fairings attached.
+/// Builds the Rocket instance with all managed state and routes mounted.
+///
+/// Injects repositories, password hasher, cache context, and health services.
+/// Mounts all HTTP endpoints and attaches CORS.
 fn build_rocket() -> Result<rocket::Rocket<rocket::Build>, anyhow::Error> {
     // ---
 
@@ -145,6 +160,7 @@ fn build_rocket() -> Result<rocket::Rocket<rocket::Build>, anyhow::Error> {
 
 // ---
 
+/// Initializes tracing/logging with `RUST_LOG` support.
 fn init_tracing() {
     // ---
 

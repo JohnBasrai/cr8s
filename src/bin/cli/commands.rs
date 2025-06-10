@@ -1,6 +1,8 @@
 // src/bin/cli/commands.rs
-// Command implementation logic - preserved from original commands.rs
-
+//! CLI command implementations for `cr8s-cli`.
+//!
+//! Each function corresponds to a `Commands` variant defined in `cli.rs`.
+//! Logic here is domain-aware and interacts with repositories, mailers, and password hashing.
 use anyhow::{anyhow, Context, Result};
 use cr8s::domain::{
     //
@@ -14,7 +16,12 @@ use cr8s::domain::{
 
 // ---
 
-/// Creates a user with the specified roles.
+/// Creates a new user and assigns one or more roles.
+///
+/// Hashes the provided password using the domain-level password hasher
+/// and persists the user via `AppUserRepo`.
+///
+/// Prints confirmation and assigned roles on success.
 pub async fn create_user(
     username: String,
     password: String,
@@ -62,8 +69,10 @@ pub async fn create_user(
 
 // ---
 
-/// Deletes a user from the database by numeric ID.  Succeeds silently
-/// if no user with the given ID exists.
+/// Deletes a user from the database by numeric ID.
+///
+/// Succeeds silently if no user with the given ID exists.  Prints
+/// confirmation if deletion is attempted.
 pub async fn delete_user_by_id(user_id: i32) -> Result<()> {
     // ---
 
@@ -79,8 +88,10 @@ pub async fn delete_user_by_id(user_id: i32) -> Result<()> {
 
 // ---
 
-/// Deletes a user from the database by username.
-/// Succeeds silently if the username does not exist.
+/// Deletes a user from the database by username
+///
+/// Succeeds silently if no user with the given name exists.  Prints
+/// confirmation if deletion is attempted.
 pub async fn delete_user_by_username(name: &str) -> Result<()> {
     // ---
 
@@ -103,8 +114,6 @@ pub async fn delete_user_by_username(name: &str) -> Result<()> {
 /// a comma-separated list of role codes. The output is width-adjusted
 /// to fit the longest username for clean column alignment.
 ///
-/// This function does not print anything; the caller is responsible
-/// for displaying or redirecting the formatted output.
 pub async fn list_users_formatted() -> Result<Vec<String>> {
     // ---
 
@@ -167,6 +176,10 @@ pub async fn list_users_formatted() -> Result<Vec<String>> {
 
 // ---
 
+/// Checks whether a user with the given username exists.
+///
+/// Returns `true` if the user is found, `false` if not found,
+/// and an error if the database query fails for other reasons.
 pub async fn user_exists(user: &str) -> Result<bool> {
     // ---
 
@@ -181,6 +194,10 @@ pub async fn user_exists(user: &str) -> Result<bool> {
 
 // ---
 
+/// Heuristic check to determine if an error represents "not found".
+///
+/// This is a temporary workaround for lack of typed DB errors.
+/// Adapt this once SQLx-specific error types are integrated.
 fn is_not_found_error(e: &anyhow::Error) -> bool {
     // ---
 
@@ -191,6 +208,12 @@ fn is_not_found_error(e: &anyhow::Error) -> bool {
 
 // ---
 
+/// Sends a digest email listing recent crates within a given time window.
+///
+/// Retrieves all crates created within `hours_since` hours
+/// and sends them to the specified email using the configured mailer.
+///
+/// Prints a summary or indicates that no new crates were found.
 pub async fn digest_send(email: String, hours_since: i32) -> Result<()> {
     // ---
 
@@ -219,6 +242,12 @@ pub async fn digest_send(email: String, hours_since: i32) -> Result<()> {
 
 // ---
 
+// No unit tests are defined here, as these functions call live infrastructure.
+//
+// See `tests/cli_integration.rs` for full-stack integration tests covering:
+// - User creation, deletion, and lookup
+// - Role assignments
+// - Email digests and schema setup
 #[cfg(test)]
 mod tests {
 
