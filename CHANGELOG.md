@@ -8,7 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## \[Unreleased]
 
 ## [0.5.2] - 2025-06-06
+
+### Fixed
 - CI workflow was running cli_integration test twice and not running server_integration at all.
+- Updated `scripts/build-verification-test.sh` to make it easier to test local images, cleaned up documentation and usage message.
+
+### Added
+- Added new `run-ci-script` which allows a developer to run the ci workflow test before pushing
 
 ## [0.5.1] - 2025-06-06
 

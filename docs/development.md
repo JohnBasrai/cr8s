@@ -223,11 +223,14 @@ See the [Container Usage Guide](container-usage-guide.md) for detailed Redis net
 
 ## Integration with Container Tests
 
-The container test script validates all these scenarios automatically:
+These container test scripts can be used validate containers in the same way that the CI workflow will run them before pushing a new version:
 
 ```bash
-# Run the full test suite
-bash scripts/container-test-script.sh
+# Build new images in local docker registery, then run the full test suite
+export VERSION=x.y.z      # Use the version from `Cargo.toml` here
+scripts/build-images.sh
+scripts/build-verification-test.sh
+scripts/run-ci-tests
 ```
 
 This tests both basic functionality and database-dependent features in a clean environment.
