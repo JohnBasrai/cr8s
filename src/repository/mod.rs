@@ -1,19 +1,23 @@
 // src/repository/mod.rs
-//! This module provides the SQLx-backed implementation of the repository layer.
+//! SQLx-backed repository implementations for all database and cache access.
 //!
-//! Public interface:
+//! This module forms the infrastructure layer beneath the domain traits.
+//!
+//! ## Public interface (used by CLI, server, and tests)
 //! - `create_app_user_repo`
 //! - `create_author_repo`
 //! - `create_crate_repo`
 //! - `create_role_code_repo`
 //! - `create_cache_health_service`
 //! - `create_database_health_service`
-//! - `init_cache_with_retry`,
-//! - `init_database_with_retry_from_env`,
+//! - `init_cache_with_retry_from_env`
+//! - `init_database_with_retry_from_env`
+//! - `load_schema_from_sql_file`
 //!
-//! Internal-only symbols (not re-exported):
-//! - `get_pool()`
+//! ## Internal-only symbols (not re-exported)
+//! - `get_pool`, `get_redis_pool`
 //! - individual `*Repo` structs
+//! - `RoleCodeMapping` lookup logic
 
 mod app_user_sqlx;
 mod author_sqlx;

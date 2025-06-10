@@ -1,4 +1,20 @@
 #!/bin/bash
+# -----------------------------------------------------------------------------
+# docker-cleanup.sh – Remove stopped containers, dangling images, and old volumes.
+#
+# This script is a safe utility for reclaiming disk space during local development.
+# It performs the following cleanup tasks:
+#
+# - Removes all stopped containers
+# - Removes all dangling images (untagged or intermediate build layers)
+# - Removes any unused named volumes not currently in use
+#
+# Usage:
+#   ./scripts/docker-cleanup.sh
+#
+# Recommended for use after heavy local testing or image rebuilds.
+# ⚠️ Does NOT remove running containers or named volumes in use.
+# -----------------------------------------------------------------------------
 set -euo pipefail
 
 progname="$(basename "$0")"

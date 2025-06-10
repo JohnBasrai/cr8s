@@ -1,5 +1,10 @@
 // src/bin/server/server_cli_args.rs
 
+//! CLI flags for the `cr8s` backend binary.
+//!
+//! Enables route inspection, CI assertions, and Markdown output
+//! without launching the server in full.
+
 use clap::Parser;
 
 // ---

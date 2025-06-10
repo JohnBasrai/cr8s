@@ -1,4 +1,12 @@
 // src/bin/cli/main.rs
+//! Entry point for the cr8s CLI binary.
+//!
+//! Provides developer/admin tooling for managing users, schema, and email digests.
+//! Routes subcommands to functions in `commands.rs` after initializing infrastructure.
+//!
+//! See also:
+//! - `cli.rs` for Clap-based argument parsing
+//! - `commands.rs` for command implementations
 
 // ---
 
@@ -31,6 +39,10 @@ use cr8s::domain::{
 
 // ---
 
+/// Top-level CLI handler for cr8s.
+///
+/// Initializes tracing, parses command-line arguments, then dispatches
+/// to the appropriate command after bringing up Postgres and Redis.
 #[tokio::main]
 async fn main() -> Result<()> {
     // ---
@@ -98,6 +110,9 @@ async fn main() -> Result<()> {
 
 // ---
 
+/// Initialize tracing subscriber with `RUST_LOG` support.
+///
+/// Falls back to `info` level if no env filter is set.
 fn init_tracing() {
     // ---
 

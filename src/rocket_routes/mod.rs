@@ -1,8 +1,16 @@
 // src/rocket_routes/mod.rs
 //! Rocket route mounting and API composition layer.
 //!
-//! This module wires together domain traits and repository impls for routing.
-//! It does not contain business logic, only HTTP entrypoints and wiring.
+//! This module defines and wires together all HTTP endpoints using Rocket,
+//! mapping request routes to domain-layer traits and repository-backed handlers.
+//!
+//! It contains:
+//! - Public API entrypoints (e.g., `/login`, `/crates`, `/rustaceans`)
+//! - Rocket guards for authentication and authorization
+//! - CORS setup and default fallback handlers
+//!
+//! It does *not* contain business logic or direct database access.
+//! All logic is delegated to domain traits, ensuring separation of concerns.
 
 mod authorization;
 mod authors;
@@ -38,6 +46,10 @@ pub use authors::{
 };
 
 use rocket::get;
+
+/// HTML landing page for the root `/` path.
+///
+/// Displays a brief introduction and links to API endpoints.
 #[get("/")]
 pub fn index() -> rocket::response::content::RawHtml<&'static str> {
     rocket::response::content::RawHtml(

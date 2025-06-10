@@ -1,3 +1,8 @@
+//! Authentication utilities for password hashing and verification.
+//!
+//! Provides a default implementation of the `PasswordHasherTrait`
+//! and exposes a constructor for use in both CLI and server contexts.
+
 use crate::domain::{PasswordHasherTrait, PasswordHasherTraitPtr};
 use anyhow::Result;
 use argon2::{
@@ -9,6 +14,7 @@ use std::sync::Arc;
 
 struct Argon2PasswordHasher;
 
+/// Return a default password hasher implementation using Argon2id.
 pub fn create_password_hasher() -> Result<PasswordHasherTraitPtr> {
     // ---
     Ok(Arc::new(Argon2PasswordHasher {}))

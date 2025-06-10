@@ -1,11 +1,16 @@
 // src/bin/cli/cli.rs
-// CLI argument parsing and structure definitions
+//! CLI argument definitions for `cr8s-cli` using `clap`.
+//!
+//! - Defines top-level commands for user, role, and schema management
+//! - Supports comma-delimited role parsing and flexible case-insensitive input
+//! - Includes full unit test coverage of CLI argument parsing
 
 use clap::{Parser, Subcommand};
 use cr8s::domain::RoleCode;
 
 // ---
 
+/// Top-level CLI interface parsed from command-line arguments.
 #[derive(Parser)]
 #[command(
     name = "cr8s-cli",
@@ -14,72 +19,75 @@ use cr8s::domain::RoleCode;
     author = "John Basrai <john@basrai.dev>"
 )]
 pub struct Cli {
-    // ---
+    /// The subcommand to execute.
     #[command(subcommand)]
     pub command: Commands,
 }
 
-// ---
-
+/// All supported subcommands for `cr8s-cli`.
 #[derive(Subcommand)]
 pub enum Commands {
     // ---
-    /// Create a new user with specified roles
+    /// Create a new user with specified roles.
     CreateUser {
-        /// Username for the new user
+        /// Username for the new user.
         #[arg(short, long)]
         username: String,
 
-        /// Password for the new user  
+        /// Password for the new user.
         #[arg(short, long)]
         password: String,
 
-        /// Roles to assign (case insensitive)
-        /// Valid roles: Admin, Editor, Viewer (or a/e/v shortcuts)
+        /// Roles to assign (comma-separated, case-insensitive).
+        /// Valid roles: Admin, Editor, Viewer (or a/e/v shortcuts).
         #[arg(short, long, value_delimiter = ',')]
         roles: Vec<CliRoleCode>,
     },
 
-    /// Delete a user by ID
+    /// Delete a user by numeric ID.
     DeleteUser {
-        /// User ID to delete
+        /// User ID to delete.
         #[arg(allow_hyphen_values = true)]
         user_id: i32,
     },
 
-    /// Delete a user by username
+    /// Delete a user by username.
     DeleteUserByName {
-        /// Username to delete
+        /// Username to delete.
         username: String,
     },
 
-    /// List all users with their roles
+    /// List all users with their assigned roles.
     ListUsers,
 
-    /// Check if a user exists
+    /// Check whether a user exists.
     UserExists {
-        /// Username to check
+        /// Username to check for existence.
         username: String,
     },
 
-    /// Send digest email with recent crates
+    /// Send an email digest containing recent crates.
     DigestSend {
-        /// Email address to send digest to
+        /// Email address to send the digest to.
         #[arg(short, long)]
         email: String,
 
-        /// Hours since to include crates (default: 24)
+        /// Number of hours of crate activity to include.
         #[arg(long, default_value = "24")]
         hours_since: i32,
     },
 
-    /// Load cr8s schema and default roles into the database
+    /// Load the cr8s schema and default roles into the database.
     LoadSchema,
 }
 
 // ---
 
-// Clap-compatible wrapper for RoleCode (domain type can't have clap derives)
+/// Wrapper enum for parsing role codes from CLI input.
+///
+/// Supports case-insensitive role names and common shortcuts:
+/// - "Admin", "Editor", "Viewer"
+/// - "a", "e", "v"
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CliRoleCode {
     Admin,

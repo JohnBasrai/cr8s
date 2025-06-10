@@ -1,3 +1,14 @@
+# -----------------------------------------------------------------------------
+# docker-compose.yml – cr8s development stack
+#
+# Services:
+# - Postgres 16  (named volume backed)
+# - Redis 7      (appendonly enabled)
+# - cr8s backend (via multi-stage Dockerfile)
+#
+# Intended for local dev, integration testing, and CI bootstrapping.
+# See also: scripts/dev-test-setup.sh and docs/development.md
+# -----------------------------------------------------------------------------
 services:
   postgres:
     image: postgres:15
@@ -6,7 +17,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: secret
     ports:
-      - "5432:5432"
+      - "5432:5432"             # ⚠️ Exposed only for local dev access
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -16,7 +27,7 @@ services:
   redis:
     image: redis:7
     ports:
-      - "6379:6379"
+      - "6379:6379"             # ⚠️ Exposed only for local dev access
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -45,6 +56,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    # NOTE: Use `cargo run` instead of this container for faster dev cycles
 
   cli:
     image: ${CLI_IMAGE:-cr8s-cli-dev:latest}

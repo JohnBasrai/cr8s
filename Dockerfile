@@ -1,3 +1,21 @@
+# -----------------------------------------------------------------------------
+# Dockerfile – cr8s multi-stage build for server and CLI binaries
+#
+# This file supports both production and development workflows:
+#
+# - Stage: builder         – Compiles server and CLI from source (with caching)
+# - Stage: runtime-server  – Minimal image to run the Rocket backend
+# - Stage: runtime-cli     – Minimal image to run the CLI tool
+#
+# Used by:
+# - docker-compose.yml       → for integration testing and local container runs
+# - scripts/build-images.sh  → to build versioned GHCR-compatible images
+# - CI workflows             → for reproducible test builds
+#
+# Notes:
+# - Local dev typically bypasses this using `cargo run` for faster iteration
+# - See docs/development.md for details on native + container workflows
+# -----------------------------------------------------------------------------
 # syntax=docker/dockerfile:1.4
 FROM ghcr.io/johnbasrai/cr8s/rust-dev:1.83.0-rev5 AS builder
 ARG DEBUG=0

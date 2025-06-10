@@ -1,6 +1,18 @@
 #!/bin/bash
-# common.sh - Shared functions for cr8s build and test scripts
-
+# -----------------------------------------------------------------------------
+# common.sh – Shared shell functions for cr8s development scripts.
+#
+# This file is sourced by other scripts (e.g., build-images.sh) to provide
+# reusable utility functions and helpers, such as:
+#
+# - `get-version`: Extracts project version from Cargo.toml
+# - (Add other functions here as needed)
+#
+# Usage:
+#   source "$(dirname "$0")/common.sh"
+#
+# Do not execute this script directly. It is intended for inclusion only.
+# -----------------------------------------------------------------------------
 progname="${progname:=common.sh}"
 
 # Extract version from Cargo.toml and write to VERSION file

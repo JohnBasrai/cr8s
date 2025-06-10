@@ -1,4 +1,22 @@
 #!/bin/bash
+# -----------------------------------------------------------------------------
+# build-verification-test.sh – Build sanity check: ensure cr8s Docker builds succeed.
+#
+# This script performs a minimal build verification pass:
+# - Forces clean image rebuilds for both server and CLI
+# - Uses `--no-cache` to avoid relying on any cached layers
+# - Uses `--pull` to ensure base images are fresh
+# - Confirms that all targets compile and produce runnable artifacts
+#
+# Intended for CI and local test environments to catch image build breakage early.
+#
+# Usage:
+#   ./scripts/build-verification-test.sh
+#
+# Note:
+#   This script does not tag or load the images. It only ensures they build cleanly.
+# -----------------------------------------------------------------------------
+
 set -euo pipefail
 
 VERBOSE=${1:-false}  # Pass --verbose as first arg
