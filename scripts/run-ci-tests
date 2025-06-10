@@ -1,0 +1,49 @@
+#!/bin/bash
+# -----------------------------------------------------------------------------
+# run-ci-tests – Run integration tests using locally built cr8s containers.
+#
+# This script simulates the GitHub Actions CI integration test step locally.
+# It assumes the Docker images for `cr8s-cli` and `cr8s-server` have already
+# been built and tagged with the appropriate version.
+#
+# What it does:
+# - Sets environment variables expected by the integration test harness
+# - Stops any running cr8s containers to ensure a clean slate
+# - Starts services fresh using `start-services` from dev-test-setup.sh
+# - Runs both the CLI and server integration test suites using `cargo test`
+#
+# Usage:
+#   VERSION=0.5.1 ./scripts/run-ci-tests
+#
+# Requirements:
+# - Docker images built locally with the given VERSION tag, see `build-images.sh`
+# - `scripts/dev-test-setup.sh` must define `start-services` and `stop-services`
+# - Must be run from the repo root so relative paths resolve correctly
+#
+# Environment Variables:
+#   VERSION        – Required. Tag for the local Docker images (e.g., 0.5.1)
+#   CI             – Automatically set to true to match CI behavior
+#   CLI_IMAGE      – Full image name for the CLI container (optional)
+#   SERVER_IMAGE   – Full image name for the Server container (optional)
+#
+# Exit codes:
+#   0 – All tests passed
+#   1 – Any test failed
+# -----------------------------------------------------------------------------
+
+set -euo pipefail
+
+export CI=true
+export VERSION=${VERSION:?is required}
+export CLI_IMAGE=ghcr.io/johnbasrai/cr8s/cr8s-cli:${VERSION}
+export SERVER_IMAGE=ghcr.io/johnbasrai/cr8s/cr8s-server:${VERSION}
+
+# Load utility functions for controlling Docker Compose services
+source scripts/dev-test-setup.sh
+
+# Run both integration test suites
+for test in cli server; do
+    stop-services
+    start-services
+    cargo test --test ${test}_integration -- --nocapture
+done
