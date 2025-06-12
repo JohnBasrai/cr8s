@@ -100,8 +100,11 @@ cr8s/
 │   └── server_integration.rs  # HTTP API testing
 │
 ├── templates/email/           # Tera email templates
-├── scripts/                   # development & deployment scripts
-│   ├── quickstart-dev.sh      # one-shot dev bootstrap
+├── scripts
+│   ├── build-images.sh        # Builds cr8s server and cli Docker images
+│   ├── build-verification-test.sh # Comprehensive system smoke test
+│   └── sql
+│       └── db-init.sql
 └── docs/                      # Docker tips & native workflow
 ```
 
