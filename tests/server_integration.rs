@@ -38,7 +38,7 @@ async fn make_request(
 ) -> Result<(StatusCode, Value)> {
     // ---
 
-    let url = format!("{}{}", BASE_URL, path);
+    let url = format!("{BASE_URL}{path}");
 
     let mut request = match method.to_uppercase().as_str() {
         "GET" => client.get(&url),
@@ -50,7 +50,7 @@ async fn make_request(
 
     // Add authentication header if token provided
     if let Some(token) = auth_token {
-        request = request.header("Authorization", format!("Bearer {}", token));
+        request = request.header("Authorization", format!("Bearer {token}"));
     }
 
     // Add JSON body if provided
@@ -114,7 +114,7 @@ async fn wait_for_server_ready() -> Result<()> {
     for attempt in 1..=max_attempts {
         match make_request(&client, "GET", "/cr8s/health", None, None).await {
             Ok((status, _)) if status.is_success() => {
-                println!("✅ Server ready after {} attempts", attempt);
+                println!("✅ Server ready after {attempt} attempts");
                 return Ok(());
             }
             _ => {
@@ -124,7 +124,7 @@ async fn wait_for_server_ready() -> Result<()> {
                         max_attempts
                     ));
                 }
-                println!("⏳ Server not ready, attempt {}/{}", attempt, max_attempts);
+                println!("⏳ Server not ready, attempt {attempt}/{max_attempts}");
                 sleep(delay).await;
             }
         }
@@ -250,8 +250,7 @@ async fn test_create_rustacean_api() -> Result<()> {
     ensure!(rustacean_id > 0, "Invalid rustacean ID");
 
     println!(
-        "✅ Rustacean created successfully: ID {}, Name: {}",
-        rustacean_id, rustacean_name
+        "✅ Rustacean created successfully: ID {rustacean_id}, Name: {rustacean_name}"
     );
 
     // Step 3: Verify rustacean appears in list
@@ -322,7 +321,7 @@ async fn test_create_crate_api() -> Result<()> {
         .and_then(|id| id.as_i64())
         .ok_or_else(|| anyhow::anyhow!("No id in author response"))?;
 
-    println!("✅ Author created for crate: ID {}", author_id);
+    println!("✅ Author created for crate: ID {author_id}");
 
     // Step 3: Create a crate using the author we just created
     println!("📋 Step 3: Create crate");
@@ -365,8 +364,7 @@ async fn test_create_crate_api() -> Result<()> {
     ensure!(crate_id > 0, "Invalid crate ID");
 
     println!(
-        "✅ Crate created successfully: ID {}, Name: {}",
-        crate_id, crate_name
+        "✅ Crate created successfully: ID {crate_id}, Name: {crate_name}"
     );
 
     // Step 4: Verify crate appears in list
@@ -502,7 +500,7 @@ async fn test_authentication_guard_workflow() -> Result<()> {
         .and_then(|id| id.as_i64())
         .ok_or_else(|| anyhow::anyhow!("No id in rustacean response"))?;
 
-    println!("✅ Admin can create rustaceans: ID {}", author_id);
+    println!("✅ Admin can create rustaceans: ID {author_id}");
 
     // Test 6: Valid token can access crate endpoints
     println!("📋 Step 6: Testing crate creation authorization");
@@ -535,7 +533,7 @@ async fn test_authentication_guard_workflow() -> Result<()> {
         .and_then(|id| id.as_i64())
         .ok_or_else(|| anyhow::anyhow!("No id in crate response"))?;
 
-    println!("✅ Admin can create crates: ID {}", crate_id);
+    println!("✅ Admin can create crates: ID {crate_id}");
 
     // Test 7: Token validation persists across requests
     println!("📋 Step 7: Testing token persistence");

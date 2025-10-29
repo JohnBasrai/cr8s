@@ -204,7 +204,7 @@ mod tests {
 
         // Debug: Check what user is stored
         let stored_user = repo.find_by_username("alice").await.unwrap();
-        println!("Stored user: {:?}", stored_user);
+        println!("Stored user: {stored_user:?}");
         println!("Stored password: {}", stored_user.password);
         println!("Input password: {}", creds.password);
 
@@ -215,7 +215,7 @@ mod tests {
                 assert!(value["token"].is_string()); // Just verify a token was returned
                 assert!(!value["token"].as_str().unwrap().is_empty());
             }
-            Err(e) => panic!("Expected success but got error: {:?}", e),
+            Err(e) => panic!("Expected success but got error: {e:?}"),
         }
     }
 

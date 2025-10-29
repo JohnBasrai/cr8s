@@ -86,7 +86,7 @@ async fn main() -> Result<()> {
 
             let lines = list_users_formatted().await?;
             for line in lines {
-                println!("{}", line);
+                println!("{line}");
             }
             Ok(())
         }
@@ -96,9 +96,9 @@ async fn main() -> Result<()> {
 
             let exists = user_exists(&username).await?;
             if exists {
-                println!("✅ User '{}' exists", username);
+                println!("✅ User '{username}' exists");
             } else {
-                println!("❌ User '{}' does not exist", username);
+                println!("❌ User '{username}' does not exist");
             }
             Ok(())
         }

@@ -6,6 +6,7 @@ use crate::domain::{
     NewCrate,
 };
 use crate::rocket_routes::server_error;
+use rocket::http::Status;
 use rocket::response::status::Custom;
 use rocket::serde::json::{json, Json, Value};
 use rocket::State;
@@ -57,10 +58,20 @@ pub async fn update_crate(
     a_crate: Json<NewCrate>,
 ) -> Result<Value, Custom<Value>> {
     // --
+
+    let update_conflict =
+        "Update conflict: row was modified by another user. Please refresh and try again.";
+
     let updated = repo
-        .update(id, a_crate.into_inner())
+        .update(id, a_crate.row_version, a_crate.into_inner())
         .await
-        .map_err(server_error)?;
+        .map_err(|e| {
+            if e.to_string().contains("no rows") {
+                Custom(Status::Conflict, json!({"error": update_conflict}))
+            } else {
+                server_error(e)
+            }
+        })?;
 
     Ok(json!(updated))
 }
@@ -130,10 +141,16 @@ mod tests {
                 version: new.version,
                 description: new.description,
                 created_at: Utc::now().naive_utc(),
+                row_version: 0,
             })
         }
 
-        async fn update(&self, _id: i32, updated: NewCrate) -> Result<CrateModel> {
+        async fn update(
+            &self,
+            _id: i32,
+            row_version: i32,
+            updated: NewCrate,
+        ) -> Result<CrateModel> {
             // ---
             Ok(CrateModel {
                 id: _id,
@@ -143,6 +160,7 @@ mod tests {
                 version: updated.version,
                 description: updated.description,
                 created_at: Utc::now().naive_utc(),
+                row_version,
             })
         }
 
@@ -184,6 +202,7 @@ mod tests {
             version: "1.0.0".into(),
             description: Some("Test description".into()),
             created_at: Utc::now().naive_utc(),
+            row_version: 0,
         };
 
         let mock_repo = Arc::new(MockCrateRepo::new().with_crate(test_crate));
@@ -201,7 +220,7 @@ mod tests {
             Ok(value) => {
                 assert_eq!(value[0]["name"], "test_crate");
             }
-            Err(e) => panic!("Expected success but got error: {:?}", e),
+            Err(e) => panic!("Expected success but got error: {e:?}"),
         }
     }
 
@@ -223,6 +242,7 @@ mod tests {
             name: "test_create".into(),
             version: "1.0.0".into(),
             description: Some("desc".into()),
+            row_version: 0,
         });
 
         let result = create_crate(repo_state, user, new_crate).await;
@@ -230,7 +250,7 @@ mod tests {
             Ok(value) => {
                 assert_eq!(value["name"], "test_create");
             }
-            Err(e) => panic!("Expected success but got error: {:?}", e),
+            Err(e) => panic!("Expected success but got error: {e:?}"),
         }
     }
 
@@ -245,6 +265,7 @@ mod tests {
             version: "1.0.0".into(),
             description: Some("A crate for testing".into()),
             created_at: Utc::now().naive_utc(),
+            row_version: 0,
         };
 
         let repo = Arc::new(MockCrateRepo::new().with_crate(test_crate.clone()));
@@ -262,7 +283,7 @@ mod tests {
             Ok(value) => {
                 assert_eq!(value["name"], "Test Crate");
             }
-            Err(e) => panic!("Expected success but got error: {:?}", e),
+            Err(e) => panic!("Expected success but got error: {e:?}"),
         }
     }
 
@@ -284,6 +305,7 @@ mod tests {
             name: "updated_crate".into(),
             version: "2.0.0".into(),
             description: None,
+            row_version: 0,
         });
 
         let result = update_crate(repo_state, user, 123, updated).await;
@@ -291,7 +313,7 @@ mod tests {
             Ok(value) => {
                 assert_eq!(value["name"], "updated_crate");
             }
-            Err(e) => panic!("Expected success but got error: {:?}", e),
+            Err(e) => panic!("Expected success but got error: {e:?}"),
         }
     }
 
@@ -313,7 +335,7 @@ mod tests {
             Ok(value) => {
                 assert_eq!(value["deleted"], true);
             }
-            Err(e) => panic!("Expected success but got error: {:?}", e),
+            Err(e) => panic!("Expected success but got error: {e:?}"),
         }
     }
 
@@ -357,5 +379,74 @@ mod tests {
     async fn test_view_crate_db_error() {
         // ---
         todo!("Implement error case: database error");
+    }
+
+    #[rocket::async_test]
+    async fn test_update_crate_version_conflict() {
+        struct ConflictRepo;
+
+        #[async_trait]
+        impl CrateTableTrait for ConflictRepo {
+            async fn update(
+                &self,
+                _id: i32,
+                _current_version: i32,
+                _updated: NewCrate,
+            ) -> Result<CrateModel> {
+                // Simulate version mismatch
+                Err(anyhow!(
+                    "no rows returned by a query that expected to return at least one row"
+                ))
+            }
+
+            // ... other required trait methods
+            async fn find(&self, _id: i32) -> Result<CrateModel> {
+                unimplemented!()
+            }
+            async fn find_multiple(&self, _limit: i64) -> Result<Vec<CrateModel>> {
+                unimplemented!()
+            }
+            async fn create(&self, _new: NewCrate) -> Result<CrateModel> {
+                unimplemented!()
+            }
+            async fn delete(&self, _id: i32) -> Result<()> {
+                unimplemented!()
+            }
+            async fn find_since(&self, _hours: i32) -> Result<Vec<CrateSummary>> {
+                unimplemented!()
+            }
+        }
+
+        let repo = Arc::new(ConflictRepo);
+        let binding = repo as Arc<dyn CrateTableTrait>; // No Send + Sync
+        let repo_state = State::from(&binding);
+
+        let user = GuardedAppUser(DomainAppUser {
+            id: 1,
+            username: "tester".into(),
+            password: "password".into(),
+            created_at: Utc::now().naive_utc(),
+        });
+        let updated = Json(NewCrate {
+            author_id: 1,
+            code: "test".into(),
+            name: "updated".into(),
+            version: "2.0.0".into(),
+            description: None,
+            row_version: 1, // Client thinks version is 1
+        });
+
+        let result = update_crate(repo_state, user, 123, updated).await;
+
+        // Should return 409 Conflict
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.0, Status::Conflict);
+
+        let error_json = err.1;
+        assert!(error_json["error"]
+            .as_str()
+            .unwrap()
+            .contains("Update conflict"));
     }
 }
