@@ -69,11 +69,20 @@ pub async fn update_rustacean(
 ) -> Result<Value, Custom<Value>> {
     // ---
 
+    let update_conflict =
+        "Update conflict: row was modified by another user. Please refresh and try again.";
+
     repo.inner()
-        .update(id, author.into_inner())
+        .update(id, author.row_version, author.into_inner())
         .await
         .map(|author| json!(author))
-        .map_err(server_error)
+        .map_err(|e| {
+            if e.to_string().contains("no rows") {
+                Custom(Status::Conflict, json!({"error": update_conflict}))
+            } else {
+                server_error(e)
+            }
+        })
 }
 
 #[delete("/rustaceans/<id>")]
@@ -95,7 +104,7 @@ pub async fn delete_rustacean(
 mod tests {
     use super::*;
     use crate::domain::{Author, AuthorTableTrait, NewAuthor};
-    use anyhow::Result;
+    use anyhow::{anyhow, Result};
     use async_trait::async_trait;
     use chrono::Utc;
     use rocket::State;
@@ -138,10 +147,11 @@ mod tests {
                 name: new.name,
                 email: new.email,
                 created_at: Utc::now().naive_utc(),
+                row_version: 0,
             })
         }
 
-        async fn update(&self, _id: i32, updated: Author) -> Result<Author> {
+        async fn update(&self, _id: i32, _row_version: i32, updated: Author) -> Result<Author> {
             Ok(updated)
         }
 
@@ -157,6 +167,7 @@ mod tests {
             name: "Alice".into(),
             email: "alice@example.com".into(),
             created_at: Utc::now().naive_utc(),
+            row_version: 0,
         };
 
         let repo: Arc<dyn AuthorTableTrait + Send + Sync> =
@@ -174,7 +185,7 @@ mod tests {
             Ok(value) => {
                 assert_eq!(value[0]["name"], "Alice");
             }
-            Err(e) => panic!("Expected success but got error: {:?}", e),
+            Err(e) => panic!("Expected success but got error: {e:?}"),
         }
     }
 
@@ -185,6 +196,7 @@ mod tests {
             name: "Bob".into(),
             email: "bob@example.com".into(),
             created_at: Utc::now().naive_utc(),
+            row_version: 0,
         };
 
         let repo: Arc<dyn AuthorTableTrait + Send + Sync> =
@@ -202,7 +214,7 @@ mod tests {
             Ok(value) => {
                 assert_eq!(value["email"], "bob@example.com");
             }
-            Err(e) => panic!("Expected success but got error: {:?}", e),
+            Err(e) => panic!("Expected success but got error: {e:?}"),
         }
     }
 
@@ -228,7 +240,7 @@ mod tests {
                 let value = custom_response.1; // Extract the JSON value from Custom<Value>
                 assert_eq!(value["name"], "Charlie");
             }
-            Err(e) => panic!("Expected success but got error: {:?}", e),
+            Err(e) => panic!("Expected success but got error: {e:?}"),
         }
     }
 
@@ -239,6 +251,7 @@ mod tests {
             name: "Old Name".into(),
             email: "old@example.com".into(),
             created_at: Utc::now().naive_utc(),
+            row_version: 0,
         };
 
         let repo: Arc<dyn AuthorTableTrait + Send + Sync> =
@@ -256,6 +269,7 @@ mod tests {
             name: "Updated Name".into(),
             email: "updated@example.com".into(),
             created_at: Utc::now().naive_utc(),
+            row_version: 0,
         });
 
         let result = update_rustacean(repo_state, 10, updated, user).await;
@@ -265,7 +279,7 @@ mod tests {
                 assert_eq!(value["name"], "Updated Name");
                 assert_eq!(value["email"], "updated@example.com");
             }
-            Err(e) => panic!("Expected success but got error: {:?}", e),
+            Err(e) => panic!("Expected success but got error: {e:?}"),
         }
     }
 
@@ -276,6 +290,7 @@ mod tests {
             name: "ToDelete".into(),
             email: "delete@example.com".into(),
             created_at: Utc::now().naive_utc(),
+            row_version: 0,
         };
 
         let repo: Arc<dyn AuthorTableTrait + Send + Sync> =
@@ -294,7 +309,7 @@ mod tests {
                 // NoContent doesn't have indexable content, so we just check that it succeeded
                 // NoContent == success
             }
-            Err(e) => panic!("Expected success but got error: {:?}", e),
+            Err(e) => panic!("Expected success but got error: {e:?}"),
         }
     }
 
@@ -302,5 +317,78 @@ mod tests {
     #[ignore]
     async fn test_view_author_not_found() {
         todo!("Handle error case where view_rustacean is called with unknown ID");
+    }
+
+    #[rocket::async_test]
+    async fn test_update_author_version_conflict() {
+        // Simulate the database having version 2, but client sends version 1
+        struct ConflictRepo;
+
+        #[async_trait]
+        impl AuthorTableTrait for ConflictRepo {
+            async fn find(&self, _id: i32) -> Result<Author> {
+                Ok(Author {
+                    id: 1,
+                    name: "Old".into(),
+                    email: "old@example.com".into(),
+                    created_at: Utc::now().naive_utc(),
+                    row_version: 2, // Database has version 2
+                })
+            }
+
+            async fn update(
+                &self,
+                _id: i32,
+                _current_version: i32,
+                _author: Author,
+            ) -> Result<Author> {
+                // Simulate version mismatch - no rows updated
+                Err(anyhow!(
+                    "no rows returned by a query that expected to return at least one row"
+                ))
+            }
+
+            // ... other required trait methods with default implementations
+            async fn create(&self, _new: NewAuthor) -> Result<Author> {
+                unimplemented!()
+            }
+            async fn find_multiple(&self, _limit: i64) -> Result<Vec<Author>> {
+                unimplemented!()
+            }
+            async fn delete(&self, _id: i32) -> Result<()> {
+                unimplemented!()
+            }
+        }
+
+        let repo: Arc<dyn AuthorTableTrait + Send + Sync> = Arc::new(ConflictRepo);
+        let repo_state = State::from(&repo);
+        // wrap GuardedAppUser
+        let user = EditorUser(GuardedAppUser(crate::domain::AppUser {
+            id: 1,
+            username: "tester".into(),
+            password: "password".into(),
+            created_at: Utc::now().naive_utc(),
+        }));
+
+        let updated = Json(Author {
+            id: 1,
+            name: "New Name".into(),
+            email: "new@example.com".into(),
+            created_at: Utc::now().naive_utc(),
+            row_version: 1, // Client thinks version is 1
+        });
+
+        let result = update_rustacean(repo_state, 1, updated, user).await;
+
+        // Should return 409 Conflict
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.0, Status::Conflict);
+
+        let error_json = err.1;
+        assert!(error_json["error"]
+            .as_str()
+            .unwrap()
+            .contains("Update conflict"));
     }
 }

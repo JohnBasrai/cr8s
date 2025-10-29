@@ -47,12 +47,12 @@ pub fn generate_route_state_markdown(rocket: &Rocket<rocket::Build>) -> Result<S
         .into_iter()
         .map(|(route, types)| {
             let type_list = types.join(", ");
-            format!("| `{}` | `{}` |", route, type_list)
+            format!("| `{route}` | `{type_list}` |")
         })
         .collect::<Vec<_>>()
         .join("\n");
 
-    Ok(format!("{}{}\n", header, rows))
+    Ok(format!("{header}{rows}\n"))
 }
 
 // ---

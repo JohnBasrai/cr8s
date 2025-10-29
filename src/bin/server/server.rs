@@ -80,7 +80,7 @@ fn handle_inspection_args(cli: &Cli, rocket: &Rocket) -> Result<bool, anyhow::Er
         let table = generate_route_state_markdown(rocket)?;
 
         if cli.dump_state_traits {
-            println!("{}", table);
+            println!("{table}");
         } else if let Some(path) = &cli.output {
             std::fs::write(path, table)?;
             println!("✅ Route-trait table written to {}", path.display());
@@ -208,11 +208,11 @@ fn check_and_dump_statistics(rocket: &Rocket) {
     // ---
 
     if !unused.is_empty() {
-        println!("⚠️  Unused: {:?}", unused);
+        println!("⚠️  Unused: {unused:?}");
     }
 
     if !missing.is_empty() {
-        println!("❌ Missing: {:?}", missing);
+        println!("❌ Missing: {missing:?}");
         std::process::exit(1);
     }
 }
