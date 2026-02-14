@@ -3,7 +3,6 @@ name = "cr8s"
 default-run = "server"
 version = "0.5.2"
 edition = "2021"
-authors = ["John Basrai <john@basrai.dev>"]
 description = "Backend service for the cr8s project (Rocket + SQLx + Redis)"
 
 [dependencies]
