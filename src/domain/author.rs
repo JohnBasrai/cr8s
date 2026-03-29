@@ -16,6 +16,7 @@ pub struct Author {
     pub name: String,
     pub email: String,
     pub created_at: NaiveDateTime,
+    pub row_version: i32,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -34,7 +35,7 @@ pub trait AuthorTableTrait: Send + Sync {
     async fn find(&self, id: i32) -> Result<Author>;
     async fn find_multiple(&self, limit: i64) -> Result<Vec<Author>>;
     async fn create(&self, author: NewAuthor) -> Result<Author>;
-    async fn update(&self, id: i32, author: Author) -> Result<Author>;
+    async fn update(&self, id: i32, current_version: i32, author: Author) -> Result<Author>;
     async fn delete(&self, id: i32) -> Result<()>;
 }
 

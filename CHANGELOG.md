@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## \[Unreleased]
 
+## [0.6.0] - 2025-10-28
+
+### ⚠️ BREAKING CHANGES
+
+- Repository trait signatures now require `current_version` parameter
+- API requests must include `row_version` field in update bodies
+- Database migration required (see below)
+
+### Added
+
+- **Optimistic Locking for Concurrent Updates** (#43)
+  - Added `row_version` column to `author` and `crate` tables
+  - Prevents lost updates when multiple users edit the same record simultaneously
+  - Returns **409 Conflict** when version mismatch is detected
+  - Client must refresh and retry on conflict
+
+### Changed
+
+- `update()` method signatures now require `current_version: i32` parameter
+  - `AuthorTableTrait::update(id, current_version, author)`
+  - `CrateTableTrait::update(id, current_version, updated)`
+- PUT request bodies must now include `row_version` field
+  - `PUT /rustaceans/:id` - `Author` object must include `row_version`
+  - `PUT /crates/:id` - `NewCrate` object must include `row_version`
+
+### Database Migration
+```sql
+-- Add to existing databases:
+ALTER TABLE author ADD COLUMN row_version INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE crate ADD COLUMN row_version INTEGER NOT NULL DEFAULT 1;
+```
+
 ## [0.5.2] - 2025-06-06
 
 ### Fixed

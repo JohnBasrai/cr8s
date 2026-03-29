@@ -116,8 +116,7 @@ impl std::str::FromStr for CliRoleCode {
             "editor" | "edit" | "e" => Ok(CliRoleCode::Editor),
             "viewer" | "view" | "v" => Ok(CliRoleCode::Viewer),
             _ => Err(format!(
-                "Invalid role: '{}'. Valid roles: Admin, Editor, Viewer (or a/e/v shortcuts)",
-                s
+                "Invalid role: '{s}'. Valid roles: Admin, Editor, Viewer (or a/e/v shortcuts)"
             )),
         }
     }
@@ -390,9 +389,9 @@ mod tests {
 
         // Can't directly compare RoleCode values without Debug/PartialEq
         // But we can ensure conversion doesn't panic
-        let _admin_str = format!("{:?}", admin);
-        let _editor_str = format!("{:?}", editor);
-        let _viewer_str = format!("{:?}", viewer);
+        let _admin_str = format!("{admin:?}");
+        let _editor_str = format!("{editor:?}");
+        let _viewer_str = format!("{viewer:?}");
 
         Ok(())
     }

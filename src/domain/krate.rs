@@ -28,7 +28,7 @@ pub trait CrateTableTrait: Send + Sync {
     async fn create(&self, new: NewCrate) -> Result<Crate>;
 
     /// Update an existing crate by ID.
-    async fn update(&self, id: i32, updated: NewCrate) -> Result<Crate>;
+    async fn update(&self, id: i32, current_version: i32, updated: NewCrate) -> Result<Crate>;
 
     /// Delete a crate by ID.
     async fn delete(&self, id: i32) -> Result<()>;
@@ -50,6 +50,7 @@ pub struct Crate {
     pub version: String,
     pub description: Option<String>,
     pub created_at: chrono::NaiveDateTime,
+    pub row_version: i32,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -59,4 +60,5 @@ pub struct NewCrate {
     pub name: String,
     pub version: String,
     pub description: Option<String>,
+    pub row_version: i32,
 }

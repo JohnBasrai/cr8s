@@ -99,7 +99,7 @@ impl CrateTableTrait for CrateRepo {
     // ---
 
     /// Update an existing crate by ID.
-    async fn update(&self, id: i32, updated: NewCrate) -> Result<Crate> {
+    async fn update(&self, id: i32, current_version: i32, updated: NewCrate) -> Result<Crate> {
         // ---
         let rec = sqlx::query_as::<_, CrateRow>(
             r#"
@@ -108,9 +108,10 @@ impl CrateTableTrait for CrateRepo {
             code        = $2,
             name        = $3,
             version     = $4,
-            description = $5
-        WHERE id = $6
-        RETURNING id, author_id, code, name, version, description, created_at
+            description = $5,
+            row_version = row_version + 1
+        WHERE id = $6 AND row_version = $7
+        RETURNING id, author_id, code, name, version, description, created_at, row_version
         "#,
         )
         .bind(updated.author_id)
@@ -119,6 +120,7 @@ impl CrateTableTrait for CrateRepo {
         .bind(updated.version)
         .bind(updated.description)
         .bind(id)
+        .bind(current_version)
         .fetch_one(&self.pool)
         .await
         .context("CrateTableTrait::update")?;
@@ -174,6 +176,7 @@ struct CrateRow {
     version: String,
     description: Option<String>,
     created_at: chrono::NaiveDateTime,
+    row_version: i32,
 }
 
 impl From<CrateRow> for Crate {
@@ -186,6 +189,7 @@ impl From<CrateRow> for Crate {
             version: row.version,
             description: row.description,
             created_at: row.created_at,
+            row_version: row.row_version,
         }
     }
 }

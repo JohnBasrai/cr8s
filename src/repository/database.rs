@@ -88,8 +88,7 @@ pub async fn load_schema_from_sql_file() -> Result<()> {
     // Step 2: Read the contents of the SQL file
     let contents = fs::read_to_string(&path).with_context(|| {
         format!(
-            "Failed to read SQL file at '{}'. Please check path, permissions, or volume mounts.",
-            path
+            "Failed to read SQL file at '{path}'. Please check path, permissions, or volume mounts."
         )
     })?;
 

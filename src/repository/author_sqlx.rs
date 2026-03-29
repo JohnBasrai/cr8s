@@ -23,6 +23,7 @@ struct AuthorRow {
     name: String,
     email: String,
     created_at: chrono::NaiveDateTime,
+    row_version: i32,
 }
 
 impl From<AuthorRow> for Author {
@@ -32,6 +33,7 @@ impl From<AuthorRow> for Author {
             name: row.name,
             email: row.email,
             created_at: row.created_at,
+            row_version: row.row_version,
         }
     }
 }
@@ -58,19 +60,20 @@ impl AuthorTableTrait for AuthorRepo {
     }
 
     // ---
-    async fn update(&self, id: i32, author: Author) -> Result<Author> {
+    async fn update(&self, id: i32, current_version: i32, author: Author) -> Result<Author> {
         // ---
         let row = sqlx::query_as::<_, AuthorRow>(
             r#"
             UPDATE author
-            SET name = $1, email = $2
-            WHERE id = $3
-            RETURNING id, name, email, created_at
+            SET name = $1, email = $2, row_version = row_version + 1
+            WHERE id = $3 AND row_version = $4
+            RETURNING id, name, email, created_at, row_version
             "#,
         )
         .bind(&author.name)
         .bind(&author.email)
         .bind(id)
+        .bind(current_version)
         .fetch_one(&self.pool)
         .await
         .context("AuthorRepo::update failed")?;

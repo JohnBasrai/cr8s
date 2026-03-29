@@ -17,7 +17,7 @@
 # - See docs/development.md for details on native + container workflows
 # -----------------------------------------------------------------------------
 # syntax=docker/dockerfile:1.4
-FROM ghcr.io/johnbasrai/cr8s/rust-dev:1.83.0-rev5 AS builder
+FROM ghcr.io/johnbasrai/cr8s/rust-dev:1.83.0-rev6 AS builder
 ARG DEBUG=0
 ARG CI=false
 ENV ROCKET_LOG=debug

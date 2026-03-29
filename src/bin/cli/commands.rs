@@ -60,7 +60,7 @@ pub async fn create_user(
     // ---
 
     if !role_codes.is_empty() {
-        let role_names: Vec<String> = role_codes.iter().map(|r| format!("{:?}", r)).collect();
+        let role_names: Vec<String> = role_codes.iter().map(|r| format!("{r:?}")).collect();
         println!("📝 Assigned roles: {}", role_names.join(", "));
     }
 
@@ -80,9 +80,9 @@ pub async fn delete_user_by_id(user_id: i32) -> Result<()> {
     user_repo
         .delete_by_id(user_id)
         .await
-        .with_context(|| format!("Failed to delete user with ID: {}", user_id))?;
+        .with_context(|| format!("Failed to delete user with ID: {user_id}"))?;
 
-    println!("✅ Deleted user with ID: {}", user_id);
+    println!("✅ Deleted user with ID: {user_id}");
     Ok(())
 }
 
@@ -99,9 +99,9 @@ pub async fn delete_user_by_username(name: &str) -> Result<()> {
     user_repo
         .delete_by_username(name)
         .await
-        .with_context(|| format!("Failed to delete user: {}", name))?;
+        .with_context(|| format!("Failed to delete user: {name}"))?;
 
-    println!("✅ Deleted user: {}", name);
+    println!("✅ Deleted user: {name}");
     Ok(())
 }
 
@@ -234,7 +234,7 @@ pub async fn digest_send(email: String, hours_since: i32) -> Result<()> {
 
         println!("✅ Digest email sent successfully");
     } else {
-        println!("📭 No new crates found in the last {} hours", hours_since);
+        println!("📭 No new crates found in the last {hours_since} hours");
     }
 
     Ok(())

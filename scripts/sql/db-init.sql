@@ -51,7 +51,8 @@ CREATE TABLE author (
   id SERIAL PRIMARY KEY,
   name VARCHAR NOT NULL,
   email VARCHAR NOT NULL,
-  created_at TIMESTAMP DEFAULT NOW() NOT NULL
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  row_version INTEGER NOT NULL DEFAULT 1
 );
 
 -- Add foreign key after both tables exist
@@ -65,10 +66,9 @@ CREATE TABLE crate (
   name varchar(128) NOT NULL,
   version varchar(64) NOT NULL,
   description text,
-  created_at TIMESTAMP DEFAULT NOW() NOT NULL
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  row_version INTEGER NOT NULL DEFAULT 1
 );
-
-
 
 CREATE TYPE "RoleCodeMapping" AS ENUM ('Admin', 'Editor', 'Viewer');
 
